@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+    <!DOCTYPE struts PUBLIC     
+        "-//Apache Software Foundation//DTD Struts Configuration 2.0//EN"     
+        "http://struts.apache.org/dtds/struts-2.0.dtd">    
+    <struts>  
+      <constant name="struts.devMode" value="true" />
+      <constant name="struts.i18n.encoding" value="UTF-8"></constant>
+      <constant name="struts.enable.DynamicMethodInvocation" value="true"/>
+      
+        <package namespace="/" name="actions" extends="struts-default">  
+          <!--    <action name="ModelAction"  class="FPaction.ModelAction"  method="train">  
+              <result name="result">result.jsp</result>
+            </action>  -->
+            
+            <!-- 用户管理相关action --> 
+		<action name="user" class="action.UserAction">
+			<result name="register">/register.jsp</result>
+			<result name="login">/index.jsp</result>
+			<result name="home">/home.jsp</result>
+			<result name="updatePassword">/user/changePassword.jsp</result>
+			<result name="subscribe">/user/orderedBlogs.jsp</result>
+		</action>
+		<!-- 随机森林模型相关action -->
+		<action name="modelAction" class="action.ModelAction"> 
+			<result name="upload">/model/importdata.jsp</result>
+			<result name="transform" type="chain">monitor</result>
+			<result name="noauth">/model/model_authentication.jsp</result>
+		</action>
+		
+		<!-- 配置中间转换的action -->
+		<action name="monitor" class="action.TransformAction">
+        	<result name="success">/model/monitoring.jsp </result>
+        	<result name="error">/model/error.jsp </result>
+        </action>
+        
+		<!-- 博客相关action -->
+		<action name="blog" class="action.BlogAction">
+			<result name="blog">/blog/orderCancelBlog.jsp</result>
+			<result name="blogrecommend">/blog/blogRecommend.jsp</result>
+			<result name="home">/home.jsp</result>
+			<result name="updatePassword">/user/changePassword.jsp</result>
+			<result name="subscribe">/user/orderedBlogs.jsp</result>
+		</action>
+        </package>  
+    </struts>    

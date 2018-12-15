@@ -1,0 +1,265 @@
+package competition;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Map;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
+
+import competition.XmlParser.XmlInputFormat;
+
+public class MeterCompute extends Configured implements Tool {
+	
+	/**
+	 * 在此定义创建HBase表所需的参数变量，即表名、列族名
+	 * 注：HBase创建表的时候必须指明列族，且创建完成后不允许再修改
+	 * 按照试卷要求，创建两张表，其中一张表用于存储Map阶段解析后的xml文件的基础信息（文档），要求表名统一为BaseInfo
+	 * 另一张表用于存储Reduce阶段得到相关数据（文档），要求表名统一为ComputeResult
+	 * 参赛者可按照设计的数据库模式自定义两张表的列族
+	 */	
+	//############################# 代码部分1-1：请设置HBase表参数  #############################
+	static HBaseOps hbaseops;
+	static TableName BaseInfoTableName = TableName.valueOf("BaseInfo");
+	static String[] BaseInfoColumnFamily = {"Info","Function"};
+	static TableName ComputeResultTableName = TableName.valueOf("ComputeResult");
+	static String[] ComputeResultColumnFamily = {"ComputeInfo"};
+	//################################################################################
+
+	public static void main(String[] args) throws Exception {
+	/**
+	 * 在此请创建HBase表，你需要调用HBaseOps的API，并用到上面代码部分1-1定义的参数变量
+	 */
+	//############################# 代码部分1-2：请创建HBase表  #############################
+		
+		hbaseops = HBaseOps.connectHbase();
+		hbaseops.createTable(BaseInfoTableName, BaseInfoColumnFamily);
+		hbaseops.createTable(ComputeResultTableName, ComputeResultColumnFamily);
+	//################################################################################
+		while (true) {
+			ToolRunner.run(new MeterCompute(), args);
+			//核心程序循环间隔时间
+			Thread.sleep(4000);
+		}
+	}
+	/**
+	 * run()会在程序启动后循环执行，代码已给定，不需要修改
+	 * 在该方法中配置Job的运行参数（参看实际代码）
+	 * 注意：根据Hadoop特性，即使最终没有输出，也需要指定输出路径
+	 * 对于已分析文件的移动（即将已分析过的XML文件从input/xml目录移动到tmp/xml目录）也在该部分完成，
+	 */
+	public int run(String[] args) throws Exception {
+		
+		String InDirPath = args[0];
+		String OutDirPath = args[0];
+		String ZKPath = args[1];
+		Configuration conf = new Configuration();
+
+		FileSystem fs = FileSystem.get(URI.create(InDirPath), conf);
+
+		// 设置xml文件解析的开始和结束位置
+		conf.set("xmlinput.start", "<root>");
+		conf.set("xmlinput.end", "</root>");
+
+		@SuppressWarnings("deprecation")
+		
+		//############################# 代码部分2：请设置Job参数  ##############################
+		// 初始化job
+		Job job = new Job(conf);
+		// 设置JarByClass
+		job.setJarByClass(MeterCompute.class);
+		// 设置Map阶段输出的Key和Value的类型
+		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(Text.class);
+		// 指定Map类
+		job.setMapperClass(CustomerMap.class);
+		// 指定Reduce类
+		job.setReducerClass(CustomerReduce.class);
+		// 设置input格式的类
+		job.setInputFormatClass(XmlInputFormat.class);
+		// 设置output格式的类
+		job.setOutputFormatClass(TextOutputFormat.class);
+		//###############################################################################
+		
+		//从HDFS指定的目录下（hdfs://<your-host>/input/xml）读取所有文件,并保存该批次的文件信息
+		FileInputFormat.addInputPath(job, new Path(InDirPath + "/input/xml"));
+		FileStatus[] fileStatus = fs.listStatus(new Path(InDirPath + "/input/xml"));
+		
+		// 设置输出目录（hdfs://<your-host>/output）
+		FileOutputFormat.setOutputPath(job, new Path(OutDirPath + "/output"));	
+		// 输出目录若已存在，则删除
+		Path outPath = new Path(OutDirPath + "/output");
+		if (fs.exists(outPath)) {
+			fs.delete(outPath, true);
+		}
+		
+		// 提交job
+		job.waitForCompletion(true);
+		
+		// 判断保存已处理文件的tmp文件夹是否存在，不存在则创建
+		if(!(fs.exists(new Path(InDirPath + "/tmp/xml")))){
+			fs.mkdirs(new Path(InDirPath + "/tmp/xml"));
+		}
+		// 根据读取时保存的该批次文件信息，将hdfs://<your-host>/input/xml下的所有XML文件移动到hdfs://<your-host>/tmp/xml
+		for (int i = 0; i < fileStatus.length; i++) {
+			FileStatus fileStatu = fileStatus[i];
+			String filename = fileStatu.getPath().toString().substring(fileStatu.getPath().toString().lastIndexOf("/"), fileStatu.getPath().toString().length());
+			String newFilename = InDirPath + "/tmp/xml" + filename;
+			fs.rename(fileStatu.getPath(), new Path(newFilename));
+		}
+		
+		// 为了观察和调试，给定以下的控制台输出代码，将会分别输出：
+		// run()执行次数（也可以理解为MapReduce执行的次数）；
+		// 此次Map阶段解析的XML文件个数
+		System.out.println("程序已执行第 " + (++Tools.runCounter) + " 次");
+		System.out.println("本次处理 " + Tools.fileCounter + " 个文件");
+		Tools.fileCounter = 0;
+		
+		return 0;
+	}
+	
+	/**
+	 * 
+	 *  CustomerMap中自定义map程序，在下面给定的代码中，已经获得XML文件内容的数据对象document
+	 *  参赛者现在需要编写程序，调用Tools类中的initXml方法直接解析读取到的xml文件内容
+	 *  解析结果以HashMap保存，继续调用Tools类提供的2个获取数据的API获取想要的字段数据，作字段处理，要求如下：
+	 *	1.将试卷中要求的基础信息存入BaseInfo表（此处需要调用HBaseOps的API） 2.将计算电流差值所需的相关数据通过context传到Reduce
+	 *	注：存储数据时需要结合查询需求，慎重考虑并设计数据存储的行键
+	 */
+	public static class CustomerMap extends Mapper<LongWritable, Text, Text, Text> {
+		//初始化一个Tools类
+		Tools t = new Tools();
+		public void map(LongWritable key, Text value, Context context)
+				throws IOException, InterruptedException {
+			Tools.fileCounter += 1;
+			String document = value.toString();
+			
+			//############################# 代码部分3：请完善map代码  ##############################
+			//调用Tools类的initXml()方法，将得到的xml进行解析
+			t.initXml(document);
+			//获取以HashMap保存公共标签信息的对象common
+			HashMap<String,String> common = t.getPublic();
+			//从common中获取采集器id (gatewayid)和时间(sequence)
+			String gatewayId = common.get("gateway_id");
+			String sequence =  common.get("sequence");
+			//调用Tools类的getContent()方法获取保存了meter和function信息的HashMap，此HashMap的key为meterid,value为hashMap
+			HashMap<String,HashMap<String,String>> contentMap = t.getContent();
+
+			//遍历得到的HashMap的key和value
+			Iterator<Entry<String, HashMap<String,String>>> contentIter = contentMap.entrySet().iterator();  
+			while (contentIter.hasNext()) {  
+				Entry<String, HashMap<String,String>> entry = (Entry<String, HashMap<String,String>>) contentIter.next();  
+				
+				//获取meterID
+				String meterId = (String)entry.getKey();
+				
+				//将时间与同一个采集器中各电表的电流值传到reduce做相应计算
+				String electricity = entry.getValue().get("text_1").toString();  
+				context.write(new Text(gatewayId + "_" + meterId), new Text(sequence + ">" + electricity));
+				
+				//遍历common的key和value，将公共标签的信息写入到hbase表保存baseinfo信息的列族
+				Iterator<Entry<String, String>> commonIter = common.entrySet().iterator(); 
+				while(commonIter.hasNext()){
+					Entry<String, String> commonEntry = (Entry<String, String>) commonIter.next();  
+					String commonKey = commonEntry.getKey().toString();
+					String commonValue = commonEntry.getValue().toString();
+					try {
+						hbaseops.put("BaseInfo", sequence + "_" + gatewayId + "_" + meterId, "Info", commonKey, commonValue);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+				//初始化一个保存function信息的HashMap对象function
+				HashMap<String,String> function = contentMap.get(meterId);
+
+				//遍历function的key和value，将function的信息写入到hbase表保存function信息的列族
+				Iterator<Entry<String, String>> funcIter = function.entrySet().iterator(); 
+				while(funcIter.hasNext()){
+					Entry<String, String> funcentry = (Entry<String, String>) funcIter.next();  
+					String funcKey = funcentry.getKey().toString();
+					String funcValue = funcentry.getValue().toString();
+					try {
+						hbaseops.put("BaseInfo", sequence + "_" + gatewayId + "_" + meterId, "Function", funcKey, funcValue);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+
+			}
+		}
+		//################################################################################
+	}
+	
+	/**
+	 * 
+	 * CustomerReduce中要求自定义reduce程序，在此不需要调用Tools类
+	 * reduce程序会获取context中传输的数据，下面给定的代码中已经对这些数据进行了排序并存入ArrayList结构中
+	 * 参赛者现在需要编写程序分析ArrayList中的数据，并根据试卷要求，计算各个电表每10秒的电流差值，并将结果存入HBase（调用HBaseOps的API实现）
+	 * 注：应该总是保留最后一个文件的数据，并在下次reduce计算时添加进去，给定代码已实现，但请参赛者理解代码（文档）
+	 */
+	public static class CustomerReduce extends Reducer<Text, Text, Text, Text> {
+		public void reduce(Text key, Iterable<Text> values, Context context)
+				throws IOException, InterruptedException {			
+			// valueList保存value的集合
+			List<String> valueList = new ArrayList<String>();			
+			for (Text value : values) {
+				valueList.add(value.toString());
+			}
+			//KVmap用于保留每个Key及对应的values中的最后一个value
+			Map<String, String> KVmap = Tools.KVmap;
+			// 排除第一次Reduce时KVmap中没有数据
+			if(KVmap.containsKey(key.toString())){
+				valueList.add(KVmap.get(key.toString()));
+			}
+			// 对value集合按照时间进行排序
+			Collections.sort(valueList);		
+			// 将该key中最后一个value进行中间存储，便于下轮Job继续作差值
+			KVmap.put(key.toString(), valueList.get(valueList.size()-1));
+			
+			//############################# 代码部分4：请完善reduce代码  ##############################
+			// 第一个function的值为电流值
+			int electricity;
+			//保存map阶段传过来的时间
+			String sequence = "";
+			// 以10秒为单位,计算同一楼栋同一采集器电流变化值
+			for (int i = 0; i < valueList.size() - 1; i++) {
+				sequence = valueList.get(i).split(">")[0];
+				electricity = Integer.parseInt(valueList.get(i).split(">")[1]);
+				String startTime = sequence;
+				String endTime = valueList.get(i + 1).split(">")[0];
+				// newValue电流变化的差值
+				int newValue = Integer.parseInt(valueList.get(i + 1).split(">")[1]) - electricity;
+				
+				// 将得到的数据存入hbase，RowKey为gateway_id+meterid+startTime
+				try {
+					hbaseops.put(ComputeResultTableName.toString(), startTime + "_" + key.toString(), "ComputeInfo", "startTime", startTime);
+					hbaseops.put(ComputeResultTableName.toString(), startTime + "_" + key.toString(), "ComputeInfo", "endTime", endTime);
+					hbaseops.put(ComputeResultTableName.toString(), startTime + "_" + key.toString(), "ComputeInfo", "change", String.valueOf(newValue));
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+			//################################################################################
+		}
+	}
+}

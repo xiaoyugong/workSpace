@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+<fullyQualifiedTypeName name="org.apache.hadoop.hbase.client.Delete"/>
+<fullyQualifiedTypeName name="org.apache.hadoop.hbase.client.Table"/>
+<fullyQualifiedTypeName name="org.apache.hadoop.conf.Configuration"/>
+<fullyQualifiedTypeName name="org.apache.hadoop.hbase.client.Connection"/>
+<fullyQualifiedTypeName name="org.apache.hadoop.hbase.client.Result"/>
+<fullyQualifiedTypeName name="org.apache.hadoop.hbase.util.Bytes"/>
+<fullyQualifiedTypeName name="org.apache.hadoop.hbase.client.ConnectionFactory"/>
+<fullyQualifiedTypeName name="org.apache.hadoop.hbase.client.Get"/>
+<fullyQualifiedTypeName name="org.apache.hadoop.hbase.client.Scan"/>
+<fullyQualifiedTypeName name="org.apache.hadoop.hbase.Cell"/>
+<fullyQualifiedTypeName name="java.util.List"/>
+<fullyQualifiedTypeName name="java.util.ArrayList"/>
+<fullyQualifiedTypeName name="org.jruby.RubyProcess.Sys"/>
+<fullyQualifiedTypeName name="java.util.Random"/>
+<fullyQualifiedTypeName name="java.lang.String"/>
+<fullyQualifiedTypeName name="org.apache.commons.lang.RandomStringUtils"/>
+<fullyQualifiedTypeName name="org.apache.hadoop.mapreduce.lib.input.TextInputFormat"/>
+<fullyQualifiedTypeName name="java.util.Iterator"/>
+<fullyQualifiedTypeName name="org.apache.spark.api.java.function.VoidFunction"/>
+<fullyQualifiedTypeName name="org.apache.hadoop.hbase.TableName"/>
+<fullyQualifiedTypeName name="org.apache.hadoop.hbase.mapreduce.TableOutputFormat"/>
+<fullyQualifiedTypeName name="org.apache.spark.api.java.JavaPairRDD"/>
+<fullyQualifiedTypeName name="org.apache.spark.api.java.JavaRDD"/>
+<fullyQualifiedTypeName name="org.apache.spark.api.java.function.PairFunction"/>
+<fullyQualifiedTypeName name="org.apache.hadoop.mapreduce.lib.output.TextOutputFormat"/>
+<fullyQualifiedTypeName name="org.apache.hadoop.mapreduce.lib.output.FileOutputFormat"/>
+<fullyQualifiedTypeName name="java.lang.System"/>
+<fullyQualifiedTypeName name="java.util.LinkedList"/>
+<fullyQualifiedTypeName name="org.apache.hadoop.hbase.client.Put"/>
+</qualifiedTypeNameHistroy>

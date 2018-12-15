@@ -1,0 +1,90 @@
+@charset "utf-8";
+/*css document*/
+/*##1 全局定义区 2 常用定义区 3 页头页尾 4 自定义标签库 5插件定义区##*/
+
+/*########## 全局定义 ##########*/
+html,body,div,span,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,address,big,cite,code,del,em,font,img,ins,small,strong,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,button,input,textarea{margin:0;padding:0}
+ul,ol,li {list-style-type: none; list-style-image: none}
+body {color:#2e2f2e;background:#fff;font: 12px/1.5 'simsun','microsoft YaHei','SimHei',sans-serif}
+
+button,input,textarea {font: 14px/1.5 'SimHei','simsun'; vertical-align:middle}
+h2{font-size:16px}
+h3{font-size:14px}
+h4{font-size:12px}
+
+button::-moz-focus-inner,input[type="reset"]::-moz-focus-inner,input[type="button"]::-moz-focus-inner,input[type="submit"]::-moz-focus-inner,input[type="file"]>input[type="button"]::-moz-focus-inner{border:none;padding:0}
+
+:focus{outline:0}
+
+table {border-collapse:collapse;}
+
+pre {font-family: courier new, courier, monospace}
+address,cite,dfn,em,var {font-style: normal}
+code {font-family: courier new, courier, monospace}
+kbd {font-family: courier new, courier, monospace}
+samp {font-family: courier new, courier, monospace}
+small {font-size: 12px}
+
+sup {vertical-align: text-top}
+sub {vertical-align: text-bottom}
+img{border:0;margin:0;}
+/*########## 全局定义-end ##########*/
+
+/*########## 常用表单定义 ##########*/
+
+/*清除闭合浮动*/
+.clearfix:after {DISPLAY: block; HEIGHT: 0px; VISIBILITY: hidden; CLEAR: both; CONTENT: "."}
+.clearfix {DISPLAY: inline-block}
+.clearfix {DISPLAY: block}
+.clear{clear:both;}
+/*清除闭合浮动end*/
+
+/*高度auto样式定义*/
+.ha {min-height:100px;height:auto !important;height:100px}
+/*高度auto样式end*/
+
+
+/*常用字体样式*/
+.font-yh {font-family:'microsoft YaHei';}
+.font-arial{font-family:'Arial'}
+.ff_kt {font-family:'KaTi';}
+.ff_ktgb {font-family:'KaTi_GB2312';}
+/*常用字体样式end*/
+
+/*常用链接*/
+a:link,a:visited {text-decoration:none;}
+a:active {color: #000000;text-decoration:none;}
+a:hover {color:#C30;}
+A.page:link,A.page:visited {text-decoration:none;margin:0px;padding:0px 3px 0px 3px;color:#000000;background-color:#f8f8f8;border:1px solid #cccccc;;outline: none}
+A.page:active {COLOR: #ff6600; TEXT-DECORATION:none}
+A.page:hover {COLOR: #000; TEXT-DECORATION:none;font-weight:bold;background-color:#000000;color:#ffffff}
+A.pagesel:link,A.pagesel:visited {text-decoration:none;margin:0px;padding:0px 3px 0px 3px;color:#ff4401;background:#ffffff;border:1px solid #888888;font-weight:bold}
+/*常用链接-end*/
+
+
+/*常用浮动定义*/
+.fl {float:left}
+.fr {float:right}
+.fld {display:inline;float:left;}
+.frd {display:inline;float:right;}
+/*常用浮动定义end*/
+
+.log_wrap{width:100%;height:auto;background:url(../images/login_bg_slip.png) repeat-x left top;}
+.log_bg{width:1000px;margin:0 auto;height:500px;overflow:hidden;background:url(../images/login_bg.jpg) no-repeat left top;}
+.log{margin:62px 0 0 322px;width:359px;height:302px;}
+.log_t{padding:30px 0 0 60px;font-size:30px;font-weight:bold;color:#0059D6;font-family:microsoft YaHei;}
+.log_form1{height:22px;width:173px;line-height:22px;border:1px solid #A6CAFF;}
+.log_tab{margin:0px 0px 20px 65px;color:#0059D6;}
+.log_tab tr{line-height:32px;}
+.log_form2{border:1px solid #A6CAFF;}
+.log_form3{height:28px;width:79px;line-height:28px;color:#fff;font-weight:bold;background:url(../images/login_button.png) no-repeat left top;border:0;cursor: pointer;}
+
+
+
+
+
+
+
+
+
+

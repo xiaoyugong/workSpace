@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE struts PUBLIC
+    "-//Apache Software Foundation//DTD Struts Configuration 2.3//EN"
+    "http://struts.apache.org/dtds/struts-2.3.dtd">
+<struts>
+	<!-- 指定Web应用的默认编码集,相当于调用HttpServletRequest的setCharacterEncoding方法 -->
+	<constant name="struts.i18n.encoding" value="UTF-8" />
+	<!-- 设置浏览器是否缓存静态内容,默认值为true(生产环境下使用),开发阶段最好关闭 -->
+	<constant name="struts.serve.static.browserCache" value="false" />
+	<!-- 当struts的配置文件修改后,系统是否自动重新加载该文件,默认值为false(生产环境下使用),开发阶段最好打开 -->
+	<constant name="struts.configuration.xml.reload" value="false" />
+	<!-- 开发模式下使用,这样可以打印出更详细的错误信息 -->
+	<constant name="struts.devMode" value="false" />
+	<!-- struts的action交由spring创建和管理 -->
+	<constant name="struts.objectFactory" value="spring" />
+	<!--  struts文件上传大小限制 -->
+	<constant name="struts.multipart.maxSize" value="10000000000000" />
+	<!-- 文件上传临时文件存放路径 -->
+	<constant name="struts.multipart.saveDir" value="/tmp" />
+	<include file="struts-validatecode.xml" />
+
+	<!-- 全局Package -->
+	<package name="def" extends="struts-default">
+		<interceptors>
+			<interceptor name="pretreatmentInterceptor"
+				class="com.parkbobo.utils.PretreatmentInterceptor"></interceptor>
+			<interceptor-stack name="my">
+				<interceptor-ref name="pretreatmentInterceptor">
+					<param name=""></param>
+				</interceptor-ref>
+			<interceptor-ref name="fileUpload"></interceptor-ref> 
+				<interceptor-ref name="defaultStack" />
+			</interceptor-stack>
+		</interceptors>
+		<default-interceptor-ref name="my" />
+		<global-results>
+            <result name="invalid.token">/invalid.jsp</result> 
+			<result name="login">/login.jsp</result>
+			<result name="weixin_error">/weiXinBind/weiXinBind-toBind.jsp</result>
+			<result>/WEB-INF/jsp/common/success.jsp</result>
+		</global-results>
+		<action name="pagenotfound">
+			<result>/404.jsp</result>
+		</action>
+	</package>
+	<!-- 后台管理 -->
+	<package name="admin" extends="def" namespace="/">
+
+
+		<action name="download" class="downloadAction">   
+			<result name="success" type="stream">
+				<param name="contentType">application/octet-stream;charset=ISO8859-1</param>
+				<param name="inputName">inputStream</param>
+				<param name="contentDisposition">attachment;filename="${downloadFileName}"</param>
+				<param name="bufferSize">4096</param>
+			</result>
+		</action>
+		
+		<action name="*_*" class="{1}Action" method="{2}">
+			<result name="{2}">/WEB-INF/jsp/{1}/{1}-{2}.jsp</result>
+			<result name="download" type="stream">
+				<param name="contentType">application/octet-stream;charset=ISO8859-1</param>
+				<param name="inputName">inputStream</param>
+				<param name="contentDisposition">attachment;filename="${downloadFileName}"</param>
+				<param name="bufferSize">4096</param>
+			</result>
+		</action>
+
+	</package>
+
+
+</struts>
+	

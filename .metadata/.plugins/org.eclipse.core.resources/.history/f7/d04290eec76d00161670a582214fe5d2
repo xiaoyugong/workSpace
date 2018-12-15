@@ -1,0 +1,23 @@
+package com.wuzhou.producer.deserializer;
+
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.kmlc.protobuf.OffenceSnapDataProtos.OffenceSnapData;
+
+import kafka.serializer.Decoder;
+import kafka.utils.VerifiableProperties;
+
+public class ProtocolDeserializer implements Decoder<OffenceSnapData> {
+	public ProtocolDeserializer(){}
+	public ProtocolDeserializer(VerifiableProperties properties) {}
+	
+	public OffenceSnapData fromBytes(byte[] data) {
+		// TODO Auto-generated method stub
+		try {
+			return OffenceSnapData.parseFrom(data);
+		} catch (InvalidProtocolBufferException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+}

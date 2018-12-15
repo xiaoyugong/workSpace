@@ -1,0 +1,252 @@
+package ljh.handge.data.kafka;
+
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Random;
+
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+
+import kafka.consumer.Consumer;
+import kafka.consumer.ConsumerConfig;
+import kafka.consumer.ConsumerIterator;
+import kafka.consumer.KafkaStream;
+import kafka.javaapi.consumer.ConsumerConnector;
+import kafka.message.MessageAndMetadata;
+import kafka.serializer.Decoder;
+import kafka.serializer.StringDecoder;
+import kafka.utils.VerifiableProperties;
+import ljh.handge.data.bean.Gate;
+import ljh.handge.data.bean.GateFactory;
+import ljh.handge.data.bean.Vehicle;
+import ljh.handge.data.bean.VehicleFactory;
+import ljh.handge.data.protobuffer.SendToFinal;
+import ljh.handge.data.util.PropertiesReader;
+
+public class VehicleController {
+
+	private static Properties props = null;
+	private static ConsumerConnector consumer;
+	public static Random random;
+	public static KafkaProducer<String, byte[]> kafkaProducer;
+	public static String FNAME = "src/config.properties";
+	public static String BOOTSTRAP_SERVERS, ZOOKEEPER_CONNECT, GROUP_ID = null;
+	public static Map<String, Gate> gates;
+
+	//测试用文件流
+	public static FileOutputStream fos;
+
+	static {
+		random = new Random();
+		props = new Properties();
+		GateFactory gf = new GateFactory();
+		gates = gf.findAll();
+
+		//测试用文件流
+		try {
+			fos = new FileOutputStream("/home/gxy/vehicleinfo.txt", false);
+		} catch (FileNotFoundException e1) {
+			e1.printStackTrace();
+		}
+
+		try {
+			PropertiesReader.init(FNAME);
+			BOOTSTRAP_SERVERS = PropertiesReader.getProperty("BOOTSTRAP_SERVERS");
+			ZOOKEEPER_CONNECT = PropertiesReader.getProperty("ZOOKEEPER_CONNECT");
+			GROUP_ID = PropertiesReader.getProperty("GROUP_ID");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		props.put("bootstrap.servers", BOOTSTRAP_SERVERS);
+		props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+		props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+		props.put("request.required.acks", "1");
+		props.put("partitioner.class", "ljh.handge.data.util.CostomPartitioner");
+
+		props.put("zookeeper.connect", ZOOKEEPER_CONNECT);
+		props.put("group.id", GROUP_ID);
+		props.put("auto.offset.reset", "largest");
+		props.put("auto.commit.enable", "true");
+		props.put("auto.commit.interval.ms", "300000");
+		props.put("serializer.class", "kafka.serializer.StringEncoder");
+
+		kafkaProducer = new KafkaProducer<String, byte[]>(props);	
+		ConsumerConfig config = new ConsumerConfig(props);
+		consumer = Consumer.createJavaConsumerConnector(config);
+	}
+
+	public static void main(String[] args) throws InterruptedException {
+		consume();
+	}
+
+	public static void consume() throws InterruptedException {
+		Map<String, Integer> topicCountMap = new HashMap<String, Integer>();
+		topicCountMap.put("base", 1);
+
+		Decoder<String> keyDecoder = new StringDecoder(new VerifiableProperties());
+		Decoder<String> valueDecoder = new StringDecoder(new VerifiableProperties());
+
+		Map<String, List<KafkaStream<String, String>>> createMessageStreams = consumer.createMessageStreams(topicCountMap, keyDecoder, valueDecoder);
+		for (Iterator<String> it = createMessageStreams.keySet().iterator(); it.hasNext(); ) {
+			String key = it.next();
+			System.out.println("key: " + key);
+			List<KafkaStream<String, String>> values = createMessageStreams.get(key);
+			for (KafkaStream<String, String> value : values) {
+				ConsumerIterator<String, String> consumerIt = value.iterator();
+				while (consumerIt.hasNext()) {
+					MessageAndMetadata<String, String> data = consumerIt.next();
+					Vehicle vehicle = MessageToObject(data.message());
+//					System.out.println(vehicle.toString());
+
+					//检查该车辆是否首次进入当前卡口
+					if(checkFirstEnter(vehicle)){
+						sendToTopic(vehicle);
+						setNewSpeed(vehicle);
+						setNewGateAndDesireTime(vehicle);
+					}
+					//检查预期时间和当前时间是否匹配
+					if(checkTime(vehicle)){
+						sendToSelf(vehicle);
+					}
+					else {
+						sendToNext(vehicle);
+					}
+//					Thread.sleep(200);
+				}
+			}
+		}
+	}
+
+	public static Vehicle MessageToObject(String info){
+		String[] infos = info.split(",");
+		Vehicle vehicle = new Vehicle();
+		vehicle.setCurrentGate(infos[0]);
+		vehicle.setPreviousGate(infos[1]);
+		vehicle.setPlateNumber(infos[2]);
+		vehicle.setType(infos[3]);
+		vehicle.setColor(infos[4]);
+		vehicle.setBrand(infos[5]);
+		vehicle.setSpeed(infos[6]);
+		vehicle.setDesireTime(infos[7]);
+		vehicle.setFirstEnter(infos[8]);
+		return vehicle;
+	}
+
+	public static void setNewGateAndDesireTime(Vehicle vehicle){
+		String next_gate = null;
+		double distance;
+		double speed;
+		double needTime;
+		String old_gate = vehicle.getCurrentGate();
+		String prevois_gate = vehicle.getPreviousGate();
+		int g_code = 0;
+		if(old_gate.equals("0")){
+			next_gate = "1";
+			distance = 1.0;
+		} else {
+			String[] next_gates = gates.get(old_gate).getNextGates().split(",");
+			do{
+				g_code = random.nextInt(next_gates.length);
+				next_gate = next_gates[g_code];
+			} while(prevois_gate.equals(next_gate));
+			String[] next_distances = gates.get(old_gate).getDistances().split(",");
+			distance = Double.valueOf(next_distances[g_code]);
+		}
+		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		Date currentTime = new Date();
+		speed = Long.valueOf(vehicle.getSpeed());
+		needTime = (distance / speed) * 3600000;
+		Date desireTime = new Date((long)(currentTime.getTime() + needTime));
+		vehicle.setPreviousGate(old_gate);
+		vehicle.setDesireTime(df.format(desireTime));
+		vehicle.setCurrentGate(next_gate);
+	}
+
+	public static void setNewSpeed(Vehicle vehicle){
+		String newSpeed;
+		String type = vehicle.getType();
+		newSpeed = VehicleFactory.generateSpeed2(type);
+		vehicle.setSpeed(newSpeed);
+	}
+
+	public static boolean checkFirstEnter(Vehicle vehicle){
+		if(vehicle.getFirstEnter().equals("0")){
+			vehicle.setFirstEnter("1");
+			return true;
+		}
+		else 
+			return false;
+	}
+
+	public static boolean checkTime(Vehicle vehicle) {
+		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		Date desireTime;
+		try {
+			desireTime = df.parse(vehicle.getDesireTime());
+			if(desireTime.getTime() <= new Date().getTime()){
+				return false;
+			}
+			else
+				return true;
+		} catch (ParseException e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	public static boolean checkExit(){
+		return true;
+	}
+
+	public static void sendToSelf(Vehicle vehicle){
+		String value = vehicle.toString();
+		String previousGate = vehicle.getCurrentGate();
+		ProducerRecord<String, byte[]> kafkaRecord = new ProducerRecord<String, byte[]>(VehicleGenerate.topic, previousGate, value.getBytes());
+		kafkaProducer.send(kafkaRecord);
+	}
+
+	public static void sendToNext(Vehicle vehicle){
+		String nextGate, value = null;
+		vehicle.setFirstEnter("0");
+		nextGate = vehicle.getCurrentGate();
+		value = vehicle.toString();
+		ProducerRecord<String, byte[]> kafkaRecord = new ProducerRecord<String, byte[]>(VehicleGenerate.topic, nextGate, value.getBytes());
+		kafkaProducer.send(kafkaRecord);
+	}
+
+	public static void sendToTopic(Vehicle vehicle){
+		
+		/**
+		 * 发送到topicB（使用protobuffer）
+		 */
+		try {
+			SendToFinal.getData(vehicle);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		/**
+		 * 本地测试，发送到文件系统：/home/liujihao/vehicleinfo.txt
+		 */
+//		String value = null;
+//		if(!vehicle.getCurrentGate().equals("0")){
+//			value = vehicle.toArchive() + "\n";
+//			try {
+//				fos.write(value.getBytes());
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//		}
+	}
+}

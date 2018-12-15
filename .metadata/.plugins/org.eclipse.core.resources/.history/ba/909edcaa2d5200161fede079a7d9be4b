@@ -1,0 +1,114 @@
+package fb.gxy;
+
+import java.io.IOException;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+public class MRGenerate {
+	public static Configuration configuration;  
+    public static Connection connection;  
+    public static Admin admin; 
+    public static String tableName;
+    public static String[] cq1 = new String[]{"Id", "DriveChan", "VehicleType1", "VehicleAttribute", "IllegalType1",
+    		"IllegalSubType", "PostPicNo", "ChanIndex", "SpeedLimit", "PlateType", "PlateColor", "Bright",
+    		"LicenseLen", "Country", "License", "Believe", "Index", "VehicleType2", "ColorDepth", "Color", 
+    		"Speed", "Length", "IllegalType2", "VehicleLogoRecog", "VehicleSubLogoRecog", "VehicleModel", 
+    		"MonitoringSiteID", "Dir", "DetectType", "PilotSafebelt", "CopilotSafebelt", "PilotSubVisor",
+    		"CopilotSubVisor", "PilotCall", "AlarmDataType", "llegalTime", "IllegalTime", "PicNum"};
+    public static String[] cq2 = new String[]{"Type", "PicRecogMode", "RedLightTime", "X", "Y", "Width", "Height", "Data"};
+
+	public class MyMapper extends TableMapper<Text, ImmutableBytesWritable> {
+		public void map(ImmutableBytesWritable rowkey, Result value, Context context) throws IOException, InterruptedException {
+			
+		}
+	}
+
+	public static void main(String[] args) throws Exception {
+		Configuration conf = new Configuration();
+		Job job = Job.getInstance(conf, "JobName");
+		job.setJarByClass(fb.gxy.xxx.class);
+		// TODO: specify a mapper
+		job.setMapperClass(Mapper.class);
+		// TODO: specify a reducer
+		job.setReducerClass(Reducer.class);
+
+		// TODO: specify output types
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(Text.class);
+
+		// TODO: specify input and output DIRECTORIES (not files)
+		FileInputFormat.setInputPaths(job, new Path("src"));
+		FileOutputFormat.setOutputPath(job, new Path("out"));
+
+		if (!job.waitForCompletion(true))
+			return;
+	}
+
+	//初始化链接  
+    public static void init(){  
+        configuration = HBaseConfiguration.create();  
+        configuration.set("hbase.zookeeper.quorum","localhost");  
+        configuration.set("hbase.zookeeper.property.clientPort","2181");  
+        configuration.set("zookeeper.znode.parent","/hbase");  
+        configuration.setInt("hbase.client.write.buffer", 2*1024*1024);
+        configuration.setInt("hbase.regionserver.handler.count", 10);
+        
+        try {  
+            connection = ConnectionFactory.createConnection(configuration);  
+            admin = connection.getAdmin();  
+        } catch (IOException e) {  
+            e.printStackTrace();  
+        }  
+    }  
+  
+    //关闭连接  
+    public static void close(){  
+        try {  
+            if(null != admin)  
+                admin.close();  
+            if(null != connection)  
+                connection.close();  
+        } catch (IOException e) {  
+            e.printStackTrace();  
+        }  
+  
+    }  
+  
+    //建表  
+    public static void createTable(String tableNmae,String[] cols) throws IOException {  
+  
+        init();  
+        TableName tableName = TableName.valueOf(tableNmae);  
+  
+        if(admin.tableExists(tableName)){  
+            System.out.println("talbe is exists!");  
+        }else {  
+            HTableDescriptor hTableDescriptor = new HTableDescriptor(tableName);  
+            for(String col:cols){  
+                HColumnDescriptor hColumnDescriptor = new HColumnDescriptor(col);  
+                hTableDescriptor.addFamily(hColumnDescriptor);  
+            }  
+            admin.createTable(hTableDescriptor);  
+        }  
+        close();  
+    }  
+}
+
+

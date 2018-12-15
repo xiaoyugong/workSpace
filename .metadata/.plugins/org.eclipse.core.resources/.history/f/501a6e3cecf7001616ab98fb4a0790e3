@@ -1,0 +1,52 @@
+########车牌生成参数设置#########
+#带权生成省份时的省份代码和比率
+PROVINCE = 9
+P_RATIO = 0.6
+#一批次的生成数量
+VEHICLE_NUMBER = 40000
+
+#设置不同车型的速度生成参数（服从正态分布），MAX表示最大限速，VARIANCE表示正态分布方差，MIN表示最低限速
+MOTO_VARIANCE = 100.0
+SMALL_VARIANCE = 100.0
+MID_VARIANCE = 100.0
+BIG_VARIANCE = 100.0
+OTHER_VARIANCE = 100.0
+
+#MOTO_MAX = 40.0
+#SMALL_MAX = 120.0
+#MID_MAX = 110.0
+#BIG_MAX = 100.0
+#OTHER_MAX = 90.0
+
+MOTO_MIN = 60.0
+SMALL_MIN = 60.0
+MID_MIN = 60.0
+BIG_MIN = 60.0
+OTHER_MIN = 60.0
+###########################
+
+########Kafka参数设置########
+TOPIC1 = base
+TOPIC2 = merge
+###Producer
+BOOTSTRAP_SERVERS = suna:9092,sunb:9092,sunc:9092
+#SERIALIZER_CLASS =
+#KEY_SERIALIZER = 
+#VALUE_SERIALIZER = 
+#REQUEST_REQUIRED.ACKS = 
+###Consumer
+ZOOKEEPER_CONNECT = suna:2181,sunb:2181,sunc:2181
+GROUP_ID = group13
+#SERIALIZER.CLASS = 
+#############################
+
+#########Mysql参数设置#########
+MYSQL_URL = jdbc:mysql://172.18.21.127:3306/solar
+MYSQL_USER = root
+MYSQL_PWD = mysql
+MYSQL_POOL_SIZE = 1
+MYSQL_POOL_MAX = 1
+MYSQL_WAIT_TIME = 100
+#############################
+
+IMAGE = src/image

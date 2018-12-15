@@ -1,0 +1,38 @@
+package com.wuzhou.traffic;
+
+import org.apache.spark.serializer.KryoRegistrator;
+
+import com.esotericsoftware.kryo.Kryo;
+
+public class MyKryoRegistrator implements KryoRegistrator {
+	public void registerClasses(Kryo kryo) {
+            kryo.register(MyProtobufMessage.class, new ProtobufSerializer<MyProtobufMessage.class>());
+    }
+	
+	public class ProtobufSerializer<T extends com.google.protobuf.GeneratedMessage> extends Serializer<T> {
+
+		public void write(Kryo kryo, Output output, T msg) {
+			try {
+			    msg.writeDelimitedTo(output);
+			} catch (Exception ex) {
+				    throw new KryoException("Error during Java serialization.", ex);
+			}
+		}
+
+		@SuppressWarnings("unchecked")
+		public T read(Kryo kryo, Input input, Class<T> type) {
+			try {
+				    return (T) type.getDeclaredMethod("parseDelimitedFrom", java.io.InputStream.class).invoke(null, input);
+			} catch (Exception ex) {
+			    throw new KryoException("Error during Java deserialization.", ex);
+			}
+		}
+	}
+
+	public void registerClasses(Kryo arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+}
+
+

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<b:beans xmlns="http://www.springframework.org/schema/security"
+    xmlns:b="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+                        http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.1.xsd">  
+  	<!--这些请求不过滤,其中**代表可以跨越目录，*不可以跨越目录 -->
+	<!-- 
+	 -->
+  	<http pattern="/**/*.js" security="none"/>
+    <http pattern="/**/*.css" security="none"/>
+    <http pattern="/**/*.gif" security="none"/>
+    <http pattern="/**/*.png" security="none"/>
+    <http pattern="/**/*.jpg" security="none"/>
+    <http pattern="/**/*.swf" security="none"/>
+    <http pattern="/**/*.cab" security="none"/>
+    <http pattern="/carparkDevicePort*" security="none"/>
+	<http pattern="/carparkDeviceRequestLogPort*" security="none"/>
+	<http pattern="/carparkOrderPort*" security="none"/>
+	<http pattern="/usersPort*" security="none"/>
+	<http pattern="/weiXinBind*" security="none"/>
+	<http pattern="/weixinPort*" security="none"/>
+	<http pattern="/home" security="none"/>
+	<!--1、当把<http>的use-expressions设置为true时，会把<intercept-url>的access当成包含了Spring EL表达式解析。
+			表达式应该返回boolean，定义访问是否应该被允许，比如：
+			<http use-expressions="true">
+				<intercept-url pattern="/admin*"
+				access="hasRole('admin') and hasIpAddress('192.168.1.0/24')"/>
+				...
+			</http>
+			这里只有拥有admin权限，用户在本地子网IP地址下才能访问。
+		2、-->
+	<http entry-point-ref="authenticationProcessingFilterEntryPoint">
+		<!-- 退出 -->
+		<logout invalidate-session="false" logout-success-url="/login.jsp" logout-url="/j_spring_security_logout"/>
+		<!-- 为默认的AccessDeniedHandler 设置errorPage 属性， 它会被ExceptionTranslationFilter 用到 -->
+		<access-denied-handler ref="accessDeniedHandler" />
+		<intercept-url pattern="/index.jsp" access="ROLE_ANONYMOUS" />
+		<!--访问/admin.jsp资源的用户必须具有ROLE_ADMIN的权限
+		<intercept-url pattern="/admin.jsp" access="ROLE_ADMIN" /> -->
+		<!--访问/**资源的用户必须具有ROLE_USER的权限 
+		<intercept-url pattern="/**" access="ROLE_USER" />-->
+        <!--
+        	session-management是针对session的管理. 这里可以不配置. 如有需求可以配置.
+        	id登陆唯一. 后登陆的账号会挤掉第一次登陆的账号  error-if-maximum-exceeded="true" 禁止2次登陆;   
+            session-fixation-protection="none" 防止伪造sessionid攻击. 用户登录成功后会销毁用户当前的session.   
+			 创建新的session,并把用户信息复制到新session中.   
+        --> 
+		<session-management invalid-session-url="/timeout.jsp" session-fixation-protection="none">
+			<concurrency-control max-sessions="1" error-if-maximum-exceeded="false"/>
+		</session-management>
+		
+		<!-- 定制自己的过滤器 -->
+       	<custom-filter ref="loginFilter" position="FORM_LOGIN_FILTER"  />
+		<custom-filter ref="securityFilter" before="FILTER_SECURITY_INTERCEPTOR"/>
+	</http>
+	
+	<!-- 登录验证器 -->
+    <b:bean id="loginFilter"
+		class="com.lqkj.security.MyUsernamePasswordAuthenticationFilter">
+		<!-- 处理登录 -->
+		<b:property name="filterProcessesUrl" value="/j_spring_security_check"/>
+		<b:property name="authenticationSuccessHandler" ref="loginLogAuthenticationSuccessHandler"/>
+		<b:property name="authenticationFailureHandler" ref="simpleUrlAuthenticationFailureHandler"/>
+		<b:property name="authenticationManager" ref="myAuthenticationManager"></b:property>
+	</b:bean>
+	<b:bean id="loginLogAuthenticationSuccessHandler"
+		class="org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler">
+		<!-- 登录成功后的页面 -->
+		<b:property name="defaultTargetUrl" value="/main_index"/>
+	</b:bean>
+	<b:bean id="simpleUrlAuthenticationFailureHandler"
+		class="org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler">
+		<!-- 登录失败后的页面 -->
+		<b:property name="defaultFailureUrl" value="/login.jsp?login_error=loginError"/>
+	</b:bean>
+	
+	<!--一个自定义的filter，必须包含authenticationManager,accessDecisionManager,securityMetadataSource
+		三个属性，我们的所有控制将在这三个类中实现，解释详见具体配置  -->
+	<b:bean id="securityFilter" class="com.lqkj.security.MyFilterSecurityInterceptor">
+		<!-- 用户拥有的权限 -->
+		<b:property name="authenticationManager" ref="myAuthenticationManager"/>
+		<!-- 用户是否拥有所请求资源的权限 -->
+		<b:property name="accessDecisionManager" ref="myAccessDecisionManager"/>
+		<!-- 资源与权限对应关系 -->
+		<b:property name="securityMetadataSource" ref="mySecurityMetadataSource" />
+	</b:bean>
+	<!--验证配置，认证管理器，实现用户认证的入口，主要实现UserDetailsService接口即可 -->
+	<authentication-manager alias="myAuthenticationManager">
+		<authentication-provider user-service-ref="myUserDetailService">
+			<!--如果用户的密码采用加密的话 -->
+			<!--<password-encoder hash="md5" />-->
+			<password-encoder hash="sha">
+				<salt-source user-property="username"/>
+			</password-encoder> 
+		</authentication-provider>
+	</authentication-manager>
+	<!--在这个类中，你就可以从数据库中读入用户的密码，角色信息，是否锁定，账号是否过期等 -->
+	<b:bean id="myUserDetailService" class="com.lqkj.security.MyUserDetailService"/>
+	
+	<!--访问决策器，决定某个用户具有的角色，是否有足够的权限去访问某个资源 -->
+	<b:bean id="myAccessDecisionManager" class="com.lqkj.security.MyAccessDecisionManager"/>
+	
+	<!--资源源数据定义，将所有的资源和权限对应关系建立起来，即定义某一资源可以被哪些角色访问     -->
+	<b:bean id="mySecurityMetadataSource" class="com.lqkj.security.MyInvocationSecurityMetadataSource" >
+		<b:constructor-arg><b:ref bean="resourcesService"/> </b:constructor-arg>
+	</b:bean>
+	
+	<!-- 未登录的切入点 -->
+	<b:bean id="authenticationProcessingFilterEntryPoint" class="org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint">
+		<b:property name="loginFormUrl" value="/login.jsp"></b:property>
+	</b:bean>
+	
+	<b:bean id="accessDeniedHandler" class="org.springframework.security.web.access.AccessDeniedHandlerImpl">  
+		<b:property name="errorPage" value="/accessDenied.jsp" />  
+	</b:bean>
+	<b:bean id="messageSource"  
+        class="org.springframework.context.support.ReloadableResourceBundleMessageSource">  
+        <b:property name="basename" value="classpath:messages_zh_CN" />  
+    </b:bean>
+</b:beans>

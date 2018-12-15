@@ -1,0 +1,135 @@
+package wc;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.StringTokenizer;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
+//import org.apache.mahout.common.HadoopUtil;
+
+public class WordCount extends Configured implements Tool{
+	static Map<String, List<Path>> filePath = new HashMap<String, List<Path>>();
+
+	public static class WordCountMap extends
+			Mapper<LongWritable, Text, Text, IntWritable> {
+
+		private final IntWritable one = new IntWritable(1);
+		private Text word = new Text();
+		
+		@Override
+		protected void setup(Mapper<LongWritable, Text, Text, IntWritable>.Context context)
+				throws IOException, InterruptedException {
+			// TODO Auto-generated method stub
+			super.setup(context);
+			Path filepath = ((FileSplit)context.getInputSplit()).getPath();
+			String filepathString = filepath.toString();
+			String path = filepathString.substring(0, filepathString.lastIndexOf('/'));
+			if(filePath.containsKey(path)){
+				filePath.get(path).add(filepath);
+			} else {
+				List<Path> lPath = new ArrayList<Path>();
+				lPath.add(filepath);
+				filePath.put(path, lPath);
+			}
+		}
+
+		public void map(LongWritable key, Text value, Context context)
+				throws IOException, InterruptedException {
+			String line = value.toString();
+			StringTokenizer token = new StringTokenizer(line);
+			while (token.hasMoreTokens()) {
+				word.set(token.nextToken());
+				context.write(word, one);
+			}
+		}
+	}
+
+	public static class WordCountReduce extends
+			Reducer<Text, IntWritable, Text, IntWritable> {
+		
+		public void reduce(Text key, Iterable<IntWritable> values,
+				Context context) throws IOException, InterruptedException {
+			int sum = 0;
+			for (IntWritable val : values) {
+				sum += val.get();
+			}
+			context.write(key, new IntWritable(sum));
+		}
+	}
+
+
+	public int run(String[] args) throws Exception {
+		
+		Configuration conf = new Configuration();
+		FileSystem fs = FileSystem.get(URI.create("hdfs://localhost:8020"), conf);
+		
+		FileStatus[] fileStatus = fs.listStatus(new Path("hdfs://172.18.30.48:8020/input/xml"));
+		fs.delete(new Path("hdfs://localhost:8020/output/WC"), true);
+		for (int i = 0; i < fileStatus.length; i++) {  
+		    FileStatus fileStatu = fileStatus[i];
+		    System.out.println(fileStatu.getPath());
+//		    FileInputFormat.addInputPath(job, fileStatu.getPath());
+		}
+		Job job = new Job(conf);
+		job.setJarByClass(WordCount.class);
+		job.setJobName("wordcount");
+
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(IntWritable.class);
+
+		job.setMapperClass(WordCountMap.class);
+		job.setReducerClass(WordCountReduce.class);
+
+		job.setInputFormatClass(TextInputFormat.class);
+		job.setOutputFormatClass(TextOutputFormat.class);
+
+		FileInputFormat.addInputPath(job, new Path("hdfs://localhost:8020/input/xml/xml1"));
+		FileInputFormat.addInputPath(job, new Path("hdfs://localhost:8020/input/xml/xml2"));
+		FileInputFormat.addInputPath(job, new Path("hdfs://localhost:8020/input/xml/xml3"));
+		FileInputFormat.addInputPath(job, new Path("hdfs://localhost:8020/input/xml/xml4"));
+		FileOutputFormat.setOutputPath(job, new Path("hdfs://localhost:8020/output/WC"));
+		int flag = job.waitForCompletion(true) ? 0 : -1;
+		
+		for (String key : filePath.keySet()) {
+			int size = filePath.get(key).size();
+			List<Path> lPath = filePath.get(key);
+			lPath.sort(null);
+			for (int i = 0; i < size; i++) {
+				System.out.println(key + ":   " + filePath.get(key).get(i));
+				if (i != size - 1)
+					fs.delete(filePath.get(key).get(i), true);
+			}
+		}
+		filePath.clear();
+		return (flag);
+	}
+	
+	public static void main(String[] args) throws Exception {
+		while(true) {
+			ToolRunner.run(new WordCount(), args);
+			Thread.sleep(2000);
+		}
+	}	
+}
+

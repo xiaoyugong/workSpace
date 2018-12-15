@@ -1,0 +1,89 @@
+#wrap{
+	margin: 30px;
+	font-family: "微软雅黑";
+	color:#444;
+}
+
+#alarm{
+	margin:0; 
+	padding: 6px 0 6px 0px;
+    color: #888;
+    font-size:14px;
+    display: none;
+}
+
+label{
+	display: inline-block;
+    text-align: right;
+    margin-right: 10px;
+}
+
+button{
+	margin-right: 10px;
+	border-width: 0px;
+	border-radius: 5px;
+	padding: 8px 12px;
+	border:1px solid #ccc;
+}
+
+button:hover{
+	cursor:pointer;
+	background-color:white;
+}
+
+input{
+	border: 1px solid #CCC;
+	padding: 5px 8px;
+	border-radius: 5px;
+}
+
+select{
+	border-radius: 5px;
+	padding: 3px;
+	border: 1px solid #ccc;
+}
+
+/* the css of the ordercancelblog  */
+.ordercancelblog button{
+	padding: 6px 15px 6px 20px;
+	letter-spacing: 5px;
+}
+
+.ordercancelblog{
+	width:400px;
+	text-align:center;
+	border-radius:3px;
+	border:1px solid #ccc;	
+}
+
+.ordercancelblog div{
+	padding:15px 0px;
+	border-bottom:1px solid #ccc;	
+}
+
+.list button{
+	padding: 6px 10px;
+}
+
+table{
+	margin-top: 15px;
+	border: 1px solid #ccc;
+	border-collapse:collapse;
+	font-size: 14px;
+	width: 1000px;
+	color: #444;
+}
+
+.list #blogId{
+	width:100px;
+}
+
+table td{
+	padding:3px;
+}
+
+h3{
+	font-size: 16px;
+	margin: 0px;
+	padding: 0px;
+}

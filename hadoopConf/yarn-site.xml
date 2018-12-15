@@ -1,0 +1,139 @@
+<?xml version="1.0"?>
+<configuration>
+
+<!-- Configurations for NameNode -->
+    <property>  
+        <name>yarn.acl.enable</name>  
+        <value>false</value>  
+    </property> 
+    <property>  
+        <name>yarn.admin.acl</name>  
+        <value>*</value>  
+    </property> 
+    <property>  
+        <name>yarn.log-aggregation-enable</name>  
+        <value>true</value>  
+    </property> 
+
+<!-- Configurations for ResourceManager -->
+    <property>
+        <name>yarn.resourcemanager.ha.enabled</name>
+        <value>true</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.cluster-id</name>
+        <value>mycluster</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.ha.rm-ids</name>
+        <value>hadoop135,hadoop136</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.hostname.hadoop135</name>
+        <value>hadoop135</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.hostname.hadoop136</name>
+        <value>hadoop136</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.scheduler.class</name>
+        <value>org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler</value>
+        <description>refers to capacity-scheduler.xml</description>
+    </property>
+    <property>
+        <name>yarn.client.failover-proxy-provider</name>
+        <value>org.apache.hadoop.yarn.client.ConfiguredRMFailoverProxyProvider</value>
+    </property>
+    <property>
+        <name>yarn.client.failover-max-attempts</name>
+        <value>3</value>
+    </property>
+
+    <property>
+        <name>yarn.resourcemanager.ha.automatic-failover.enabled</name>
+        <value>true</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.ha.automatic-failover.embedded</name>
+        <value>true</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.zk-address</name>
+        <value>hadoop135:2181,hadoop136:2181,hadoop137:2181</value>
+    </property>
+
+    <!-- Configurations for ResourceManager Restart -->
+    <property>
+        <name>yarn.resourcemanager.recovery.enabled</name>
+        <value>true</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.store.class</name>
+        <value>org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.am.max-attempts</name>
+        <value>3</value>
+    </property>
+
+    <!-- Configurations for NodeManager -->
+    <property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.resource.memory-mb</name>
+        <value>12288</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.vmem-pmem-ratio</name>
+        <value>2</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.local-dirs</name>
+        <value>/opt/hadoop/tmp/nm_local_dirs</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.delete.debug-delay-sec</name>
+        <value>600</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.log-dirs</name>
+        <value>/var/log/hadoop</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.log.retain-seconds</name>
+        <value>10800</value>
+    </property>
+
+    <!-- Configurations for NodeManager Restart -->
+    <property>
+        <name>yarn.nodemanager.recovery.enabled</name>
+        <value>true</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.recovery.dir</name>
+        <value>/opt/hadoop/tmp/yarn-nm-recovery</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.address</name>
+        <value>0.0.0.0:45454</value>
+    </property>
+
+    <!-- Configurations for History Server (Needs to be moved elsewhere) -->
+    <property>
+        <name>yarn.log-aggregation-enable</name>
+        <value>false</value>
+    </property>
+    <property>
+        <name>yarn.log-aggregation.retain-seconds</name>
+        <value>-1</value>
+    </property>
+    <property>
+        <name>yarn.log-aggregation.retain-check-interval-seconds</name>
+        <value>-1</value>
+    </property>
+
+
+</configuration>

@@ -1,0 +1,150 @@
+/*the common*/
+#wrap{
+	padding: 30px;
+	font-family:"微软雅黑";
+}
+
+#alarm{
+	margin:0; 
+	padding: 6px 0 6px 0px;
+    color: #888;
+    font-size:14px;
+    display: none;
+}
+
+#btn-group{
+	margin-bottom: 10px;
+}
+
+button{
+	margin-right: 10px;
+	border-width: 0px;
+	border-radius: 5px;
+	padding: 8px 12px;
+	border:1px solid #ccc;
+}
+
+button:hover{
+	cursor:pointer;
+	background-color:white;
+}
+
+label{
+	display: inline-block;
+    text-align: right;
+    margin-right: 10px;
+}
+
+input{
+	border: 1px solid #CCC;
+	padding: 5px 8px;
+	border-radius: 5px;
+}
+
+/*the userlist.jsp*/
+table{
+	width: 65%;
+	color: #814813;
+	text-shadow:0px 1px 0px #FFF;
+	border-collapse:collapse;
+	border-color: #A36201;
+	border:1px solid #A36201;
+}
+
+caption{
+	font-weight:bold;
+	text-shadow:0px 1px 0px #FFF;
+	margin-bottom:12px
+}
+
+thead{
+	background-color:#DFD0A4;
+}
+
+thead, tbody, tfoot{
+	text-align: center;
+}
+
+#tb-userid{
+	width: 10%;
+}
+
+#tb-username{
+	width: 20%;
+}
+
+#tb-userpassword{
+	width: 40%;
+}
+
+#tb-userright{
+	width: 30%;
+}
+
+#btn-group{
+	margin-top: 10px;
+}
+
+.focus{
+	box-shadow: 0px 0px 5px #AFE0EC;
+}
+
+/*changepassword.jsp*/
+#changepassword{
+	width:400px;
+	text-align:center;
+	border-radius:3px;
+	border:1px solid #ccc;
+}
+
+#changepassword label{
+	width: 100px;
+}
+
+#changepassword input{
+	width: 250px;
+	padding:6px 8px;
+	box-shadow: inset 0px 1px 1px #ccc;
+}
+
+#changepassword div{
+	padding:15px 0px;
+	border-bottom:1px solid #ccc;
+}
+
+#changepassword #btn-group{
+	padding-left: 100px;
+	margin: 0px;
+}
+
+#changepassword button{
+	padding: 6px 25px 6px 30px;
+	font-size: 14px;
+	letter-spacing:5px;
+}
+
+#changepassword button:active{
+	padding-top:8px;
+}
+
+/*changeright.jsp*/
+#changeright label{
+	width: 60px;
+}
+
+#changeright input{
+	width: 250px;
+}
+
+#changeright div{
+	margin-bottom: 4px;
+}
+
+#changeright #btn-group{
+	padding-left: 100px;
+}
+
+#changeright button{
+	padding: 6px 15px;
+	font-size: 14px;
+}

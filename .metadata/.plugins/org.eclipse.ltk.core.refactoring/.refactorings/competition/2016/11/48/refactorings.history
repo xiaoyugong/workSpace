@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring accessors="true" comment="Delete 5 elements from project &apos;competition&apos;&#x0A;- Original project: &apos;competition&apos;&#x0A;- Original elements:&#x0A;     competition.HBaseOps.java&#x0A;     competition.MeterCompute.java&#x0A;     competition.Query.java&#x0A;     competition.Tools.java&#x0A;     competition.XmlParser.java" description="Delete elements" element1="/src&lt;competition{HBaseOps.java" element2="/src&lt;competition{MeterCompute.java" element3="/src&lt;competition{Tools.java" element4="/src&lt;competition{Query.java" element5="/src&lt;competition{XmlParser.java" elements="5" flags="589830" id="org.eclipse.jdt.ui.delete" resources="0" stamp="1479885381318" subPackages="false" version="1.0"/>
+</session>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE struts PUBLIC
+    "-//Apache Software Foundation//DTD Struts Configuration 2.3//EN"
+    "http://struts.apache.org/dtds/struts-2.3.dtd">
+<struts>
+	<!-- 验证码 -->
+	<package name="validateCode" extends="struts-default" namespace="/">
+       <result-types>
+           <result-type name="ValidateImage" class="com.parkbobo.manager.action.ImageResult" />
+       </result-types>
+       <action name="captcha" class="com.parkbobo.manager.action.ValidateCodeAction" method="doDefault">
+           <result name="image" type="ValidateImage" />
+       </action>
+    </package>
+</struts>
+	

@@ -1,0 +1,146 @@
+package competition;
+
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.LinkedList;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.filter.CompareFilter.CompareOp;
+import org.apache.hadoop.hbase.filter.RegexStringComparator;
+import org.apache.hadoop.hbase.filter.RowFilter;
+import org.apache.hadoop.hbase.util.Bytes;
+
+public class Query {
+	
+	static Configuration conf = null;
+	static Connection conn = null;
+
+	public static void main(String[] args) throws IOException, ParseException {
+		conf = HBaseConfiguration.create();
+		conn = ConnectionFactory.createConnection(conf);
+		conf.set("hbase.zookeeper.quorum", "127.0.0.1");
+		conf.set("hbase.zookeeper.quorum", "172.18.30.51, 172.18.30.50, 172.18.30.52");
+		conf.set("hbase.zookeeper.property.clientPort", "2181");
+		conf.set("zookeeper.znode.parent", "/hbase-unsecure");
+
+		String tableNameInfo = "BaseInfo";
+		String tableNameResult = "ComputeResult";
+
+		getByGatewayTime(tableNameInfo, "100001A000202", "2016-11-01-17-52-07");
+		getByGatewayTimeRangeMeter(tableNameResult, "100001A000202","510107D001010003",
+		 "2016-11-04-13-51-56", "2016-11-04-13-52-16"
+		 );
+		getBaseInfo(tableNameInfo, "2016-11-04-13-52-06_100001A000202_510107D001010002", "Info", "time");
+	}
+	
+	//############################# 代码部分5：请完善条件查询1  ##############################
+	/*
+	 * 参考代码: 
+	 * 在确定hbase数据库中的BaseInfo表中有这条数据时，输入hbase的精准的row(行健) ,cf(列簇) ,cl(列) 进行精确查询
+	 */
+	public static void getBaseInfo(String tableName, String row, String cf, String cl) {
+		// 获取表名字实例对象
+		TableName tablename = TableName.valueOf(tableName);
+		try {
+			// 连接数据库表
+			Table table = conn.getTable(tablename);
+			Get get = new Get(row.getBytes());
+			Result rs = table.get(get);
+			String value = Bytes.toString(rs.getValue(cf.getBytes(), cl.getBytes()));
+			System.out.println("查询结果：" + value);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	//################################################################################
+
+	
+	//############################# 代码部分6：请完善条件查询2  ##############################
+	/*
+	 * 参考代码: 
+	 * 代码思想 : 根据设备编号，时间范围和电表具体编号查询电表使用总量， 
+	 * 步骤 1 :使用hbase scan设置开始时间和结束时间.
+	 * 步骤 2 :使用rowfilter对行健进行过滤操作，这其中会使用到 RegexStringComparator正则匹配来查询设备编号和电表.
+	 * 步骤 3 :查询数据库表，将得到的数据结果遍历出来的同时，对value进行相加，得到总的电表使用量
+	 */
+	public static void getByGatewayTimeRangeMeter(String tableName,
+			String gatewayId, String meterId, String sTime, String eTime) {
+		TableName tablename = TableName.valueOf(tableName);
+		try {
+			Table table = conn.getTable(tablename);
+			Scan scan = new Scan();
+			scan.setCaching(1000);
+			scan.setStartRow(sTime.getBytes());
+			scan.setStopRow(eTime.getBytes());
+			RowFilter filter = new RowFilter(CompareOp.EQUAL, new RegexStringComparator( "\\d{4}\\-\\d{2}\\-\\d{2}\\-\\d{2}\\-\\d{2}\\-\\d{2}\\_" + gatewayId + "\\_" + meterId));
+			scan.setFilter(filter);
+			ResultScanner rs = table.getScanner(scan);
+			long change = 0;
+			for (Result kv : rs) {
+				change += Long.valueOf(Bytes.toString(kv.getValue("ComputeInfo".getBytes(), "change".getBytes())));
+			}
+			System.out.println(sTime + "——" + eTime + " 的电流变化值：" + change);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	//################################################################################
+
+	//############################# 代码部分7：请完善条件查询3  ##############################
+	/*
+	 * 参考代码:
+	 * 代码思想：根据设备编号和具体的时间点查询基础信息表，在给定的时间点没有数据时，在现有时间基础上加10秒，
+	 * 确定必返回一条且仅返回一条数据(如果查询出来大于一条数据，在得到第一条数据后，就直接跳出方法，得到第一条数据)
+	 * 步骤1：使用java基础类(calendar)，在原有时间基础上在增10秒,添加到集合里面（也可以使用时间戳，每次加1000）
+	 * 步骤2 :使用hbase scan设置开始时间和结束时间.
+	 * 步骤3 :使用rowfilter对行健进行过滤操作，这其中会使用到 RegexStringComparator正则匹配来查询设备编号和时间.
+	 * 步骤4：将得到结果遍历，一直到有数据时，将本次循环跳出(注意：一个xml会有６个行健)
+	 */
+	public static void getByGatewayTime(String tableName, String gatewayId,
+			String time) throws ParseException {
+		Date simple = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").parse(time);
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(simple);
+		LinkedList<String> list = new LinkedList<String>();
+		for (int i = 0; i < 10; i++) {
+			cal.add(Calendar.SECOND, i);
+			String str = (new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss")).format(cal.getTime());
+			cal.setTime(simple);
+			list.add(str);
+		}
+		TableName tablename = TableName.valueOf(tableName);
+		int num = 0;
+		try {
+			Table table = conn.getTable(tablename);
+			Scan scan = new Scan();
+			scan.setCaching(1000);
+			for (int i = 0; i < list.size(); i++) {
+				RowFilter filter = new RowFilter(CompareOp.EQUAL, new RegexStringComparator(list.get(i) + "\\_" + gatewayId + "\\_.{16}"));
+				scan.setFilter(filter);
+				ResultScanner rs = table.getScanner(scan);
+				for (Result kv : rs) {
+					System.out.println("查询结果：" + kv.toString());
+					num += 1;
+					if (kv != null && num == 6) {
+						break;
+					}
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	//################################################################################
+}

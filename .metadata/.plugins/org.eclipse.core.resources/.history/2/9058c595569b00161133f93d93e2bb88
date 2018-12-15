@@ -1,0 +1,409 @@
+package mission;
+
+import javax.xml.stream.XMLStreamConstants;//XMLInputFactory;
+
+import java.io.*;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map.Entry;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.io.DataOutputBuffer;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
+import javax.xml.stream.*;
+
+public class Test3 {
+	public static java.util.Map<String,List<String>> fmap = new HashMap<String,List<String>>();
+	
+	public static class XmlInputFormat1 extends TextInputFormat {
+
+		public static final String START_TAG_KEY = "xmlinput.start";
+		public static final String END_TAG_KEY = "xmlinput.end";
+
+		public RecordReader<LongWritable, Text> createRecordReader(
+				InputSplit split, TaskAttemptContext context) {
+			return new XmlRecordReader();
+		}
+
+		/**
+		 * XMLRecordReader class to read through a given xml document to output
+		 * xml blocks as records as specified by the start tag and end tag
+		 *
+		 */
+		public static class XmlRecordReader extends
+				RecordReader<LongWritable, Text> {
+			private byte[] startTag;
+			private byte[] endTag;
+			private long start;
+			private long end;
+			private FSDataInputStream fsin;
+			private DataOutputBuffer buffer = new DataOutputBuffer();
+
+			private LongWritable key = new LongWritable();
+			private Text value = new Text();
+
+			@Override
+			public void initialize(InputSplit split, TaskAttemptContext context)
+					throws IOException, InterruptedException {
+				Configuration conf = context.getConfiguration();
+				startTag = conf.get(START_TAG_KEY).getBytes("utf-8");
+				endTag = conf.get(END_TAG_KEY).getBytes("utf-8");
+				FileSplit fileSplit = (FileSplit) split;
+
+				// open the file and seek to the start of the split
+				start = fileSplit.getStart();
+				end = start + fileSplit.getLength();
+				Path file = fileSplit.getPath();
+				FileSystem fs = file.getFileSystem(conf);
+				fsin = fs.open(fileSplit.getPath());
+				fsin.seek(start);
+
+			}
+
+			@Override
+			public boolean nextKeyValue() throws IOException,
+					InterruptedException {
+				if (fsin.getPos() < end) {
+					if (readUntilMatch(startTag, false)) {
+						try {
+							buffer.write(startTag);
+							if (readUntilMatch(endTag, true)) {
+								key.set(fsin.getPos());
+								value.set(buffer.getData(), 0,
+										buffer.getLength());
+								return true;
+							}
+						} finally {
+							buffer.reset();
+						}
+					}
+				}
+				return false;
+			}
+
+			@Override
+			public LongWritable getCurrentKey() throws IOException,
+					InterruptedException {
+				return key;
+			}
+
+			@Override
+			public Text getCurrentValue() throws IOException,
+					InterruptedException {
+				return value;
+			}
+
+			@Override
+			public void close() throws IOException {
+				fsin.close();
+			}
+
+			@Override
+			public float getProgress() throws IOException {
+				return (fsin.getPos() - start) / (float) (end - start);
+			}
+
+			private boolean readUntilMatch(byte[] match, boolean withinBlock)
+					throws IOException {
+				int i = 0;
+				while (true) {
+					int b = fsin.read();
+					// end of file:
+					if (b == -1)
+						return false;
+					// save to buffer:
+					if (withinBlock)
+						buffer.write(b);
+					// check if we're matching:
+					if (b == match[i]) {
+						i++;
+						if (i >= match.length)
+							return true;
+					} else
+						i = 0;
+					// see if we've passed the stop point:
+					if (!withinBlock && i == 0 && fsin.getPos() >= end)
+						return false;
+				}
+			}
+		}
+	}
+				  static   List<String>   fileNameList    =   new ArrayList<String>();
+				  static   hbaseOp   ho   =   new hbaseOp();
+				   //保存公共标签的hbase表
+				  static   String   strBaseTab   =   "baseInfo";
+				  static   TableName   baseTableName   =   TableName.valueOf(strBaseTab);
+				  static   String[]   arrBaseCF   =   {"info","function"};
+				  static{
+						try {
+							ho.createTable(baseTableName, arrBaseCF);
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+				   }
+				  //-----//
+				  public static void fileClassify(String fpath){
+					  String   dir   =   fpath.toString().substring(0, fpath.toString().lastIndexOf("/"));
+					  if(fmap.containsKey(dir)){
+
+						  fmap.get(dir).add(fpath);
+
+					  }
+					  else{
+						  ArrayList<String>   list   =   new ArrayList<String>();
+						  list.add(fpath);
+						  fmap.put(dir, list);
+					  }
+				  }
+				  //-----//
+	public static class Map extends Mapper<LongWritable, Text, Text, outValue> {
+
+		@Override
+		protected void map(LongWritable key, Text value, Mapper.Context context)
+				throws IOException, InterruptedException {
+		     	// 保存公共的属性名和属性值，格式为public tag name=value
+				HashMap<String, String> publicmap = new HashMap<>();
+				
+				//-----//
+				FileSplit fsplit = (FileSplit)context.getInputSplit();
+				Path fpath = (Path)fsplit.getPath();
+				fileClassify(fpath.toString());
+				//-----//
+				String document = value.toString();
+				try {
+							XMLStreamReader reader = XMLInputFactory.newInstance()
+									.createXMLStreamReader(
+											new ByteArrayInputStream(document.getBytes()));
+							String currentElement  =  "";
+							String tagName = "";
+							String tagValue = "";
+							//读到meter时重新赋值0，START_ELEMENT状态下当读取到function时加1
+							int r1 = 0;
+							//读到meter时重新赋值0，CHARACTERS状态下当读取到function时加1
+							int r2 = 0;
+							String meterid = "";
+							String funcid = "";
+							// 保存相同meterid和funcid下的属性及属性值，格式为meterid+fid=name+value，读取到meter标签时重新初始化
+							HashMap<String, List> mfmap = new HashMap() ;
+							
+							while (reader.hasNext()) {
+									int code = reader.next();
+							        switch (code) {
+									case XMLStreamConstants.START_ELEMENT: // START_ELEMENT:
+											currentElement = reader.getLocalName();
+											//属性的数量
+											int n=reader.getAttributeCount();
+											if(currentElement.equalsIgnoreCase("meter")){
+													mfmap=new HashMap();
+													r1=0;
+													r2=0;
+													meterid=reader.getAttributeValue(0);
+													//把publicmap中的数据写入到hbase中
+													Iterator iter = publicmap.entrySet().iterator();  
+													while (iter.hasNext()) {  
+													    Entry entry = (Entry) iter.next();  
+													    String publicMapKey = (String)entry.getKey();  
+													    String publicMapValue = (String)entry.getValue();  
+													    ho.put(strBaseTab, meterid+"+"+publicmap.get("sequence"), "info",publicMapKey ,publicMapValue);
+													}
+											}
+											else if(currentElement.equalsIgnoreCase("function")){
+												   //保存function属性的集合
+													List attrList=new ArrayList();
+													r1++;
+													funcid=reader.getAttributeValue(0);
+													for(int i=0;i<n;i++){
+															tagName=reader.getAttributeName(i).toString();
+															tagValue=reader.getAttributeValue(i);
+															attrList.add("func"+tagName+r1+">"+tagValue);
+													}
+													mfmap.put(meterid+funcid, attrList);
+													int x=mfmap.get(meterid+funcid).size();
+													for(int i=0;i<x;i++){
+															String funcAttrName=mfmap.get(meterid+funcid).get(i).toString().split(">")[0];
+															//System.out.println(funcAttrName);
+															String funcAttrValue=mfmap.get(meterid+funcid).get(i).toString().split(">")[1];
+															//System.out.println(funcAttrValue);
+															//将一个meter下的所有function属性存入hbase中
+															ho.put(strBaseTab, meterid+"+"+publicmap.get("sequence"), "function",funcAttrName ,funcAttrValue);
+													}
+											}
+											else{
+												//将读到公共部分的标签名及属性保存到publicmap中
+													for(int i=0;i<n;i++){
+															tagName=reader.getAttributeName(i).toString();
+															tagValue=reader.getAttributeValue(i);
+															publicmap.put(currentElement+tagName, tagValue);
+												    }
+											}
+										break;
+								case XMLStreamConstants.CHARACTERS: // CHARACTERS:
+											if (!reader.getText().trim().isEmpty()) {
+													String attrvalue=reader.getText(); 
+													if(currentElement.equalsIgnoreCase("function")){
+															r2++;
+															//保存相同meter下所有function的标签值
+															List attrList=new ArrayList();
+															attrList.add("funcText"+r2+">"+attrvalue);
+															mfmap.put(meterid+funcid, attrList);
+															//将一个meter下的所有function标签值存入hbase中
+															int x=mfmap.get(meterid+funcid).size();
+															for(int i=0;i<x;i++){
+																	String funcAttrName=mfmap.get(meterid+funcid).get(i).toString().split(">")[0];
+																	//System.out.println(funcAttrName);
+																	String funcAttrValue=mfmap.get(meterid+funcid).get(i).toString().split(">")[1];
+																   //System.out.println(funcAttrValue);
+																	ho.put(strBaseTab, meterid+"+"+publicmap.get("sequence"), "function",funcAttrName ,funcAttrValue);
+														    }
+															//	将时间和第一个function的值（电流值）传入reduce
+															if(r2==1){
+																context.write(new Text(publicmap.get("gateway_id")+meterid),new outValue("function1Text",attrvalue));
+																context.write(new Text(publicmap.get("gateway_id")+meterid),new outValue("sequence",publicmap.get("sequence")));
+															}
+													}
+													else{
+															publicmap.put(currentElement, attrvalue);
+													}
+											}
+									break;
+								}
+							}
+							reader.close();
+						}
+			catch (Exception e) {
+				throw new IOException(e);
+			}
+		}
+	}
+				   //hbase中用来保存电流变化的表
+				   static String strMeterTab="strMeterTab";
+				   static TableName meterTableName=TableName.valueOf(strMeterTab);
+				   static String[] arrMeterCF={"info"};
+				   static{
+							try {
+									ho.createTable(meterTableName, arrMeterCF);
+									} catch (IOException e) {
+										e.printStackTrace();
+							         }
+				   }
+				   
+	public static class Reduce extends Reducer<Text, outValue, Text, Text> {
+				public void reduce(Text key, Iterable<outValue> values, Context context)	throws IOException, InterruptedException {
+							//保存电流值的集合
+							List<Integer> funcion1TextList = new ArrayList<Integer>();
+							//保存时间的集合
+							List<String> sequnceList = new ArrayList<String>();
+							System.out.println("key-------------------");
+							System.out.println(key.toString());
+							for(outValue value:values){
+									System.out.println("value-------------------");
+									System.out.println(value.tagName);
+									if(value.tagName.equalsIgnoreCase("function1Text")){
+										funcion1TextList.add(Integer.parseInt(value.tagAttr));
+									}else{
+										sequnceList.add(value.tagAttr);
+									}
+									System.out.println(value.tagAttr);
+							}
+							String startTime=Collections.min(sequnceList);
+							String endTime=Collections.max(sequnceList);
+							//电流变化的差值
+							int newValue=Math.abs(funcion1TextList.get(0)-funcion1TextList.get(1));
+							//将从map得到的数据存入hbase，RowKey为gateway_id+meterid+startTime
+							try {
+									ho.put(strMeterTab, key.toString()+"+"+startTime, "info", "startTime",startTime);
+									ho.put(strMeterTab, key.toString()+"+"+startTime, "info", "endTime",endTime);
+									ho.put(strMeterTab, key.toString()+"+"+startTime, "info", "meterChange",String.valueOf(newValue));
+						    } catch (Exception e) {
+									e.printStackTrace();
+						       }
+							System.out.println(newValue);
+				}
+	}
+	
+    public static void main(String[] args) throws Exception {
+					Configuration conf = new Configuration();
+			        //System.setProperty("HADOOP_USER_NAME","hdfs");
+					FileSystem fileSystem = FileSystem.get(conf);
+					conf.set("xmlinput.start", "<root>");
+					conf.set("xmlinput.end", "</root>");
+					Job job = new Job(conf);
+					job.setJarByClass(Test3.class);
+					job.setOutputKeyClass(Text.class);
+					job.setMapOutputValueClass(outValue.class);
+			
+					job.setMapperClass(Test3.Map.class);
+					job.setReducerClass(Test3.Reduce.class);
+			
+					job.setInputFormatClass(XmlInputFormat1.class);
+					job.setOutputFormatClass(TextOutputFormat.class);
+			
+					FileInputFormat.addInputPath(job, new Path("hdfs://172.18.30.48:8020/input/xml/xml1"));
+					FileInputFormat.addInputPath(job, new Path("hdfs://172.18.30.48:8020/input/xml/xml2"));
+					FileInputFormat.addInputPath(job, new Path("hdfs://172.18.30.48:8020/input/xml/xml3"));
+					FileInputFormat.addInputPath(job, new Path("hdfs://172.18.30.48:8020/input/xml/xml4"));
+					
+					FileOutputFormat.setOutputPath(job, new Path("hdfs://172.18.30.48:8020/output/xml"));
+			
+				//	Path in = new Path(args[0]);  
+				//	Path out = new Path(args[1]);  
+					//
+					job.waitForCompletion(true);
+					for(java.util.Map.Entry<String, List<String>> entry : fmap.entrySet()){
+						List<String> flist = entry.getValue();
+						for(int i = 0; i < flist.size()-1; i++){
+							fileSystem.delete(new Path(flist.get(i)), true); 
+						}		
+					}
+			//
+	}
+	  
+    //自定义map输出的value
+	static class outValue implements Writable {
+					String tagName;
+					String tagAttr;
+			
+					public outValue(){
+						
+					}
+			    	public outValue(String tagName, String tagAttr){
+						this.tagName=tagName;
+						this.tagAttr=tagAttr;
+					}
+			
+					@Override
+					public void readFields(DataInput in) throws IOException {
+						this.tagName=in.readUTF();
+						this.tagAttr=in.readUTF();
+					}
+			
+					@Override
+					public void write(DataOutput out) throws IOException {
+						out.writeUTF(tagName);
+						out.writeUTF(tagAttr);
+						
+		}
+	}
+}

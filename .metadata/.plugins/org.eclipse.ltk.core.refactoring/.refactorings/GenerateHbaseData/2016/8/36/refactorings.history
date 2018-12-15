@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring accessors="true" comment="Delete 5 elements from project &apos;GenerateHbaseData&apos;&#x0A;- Original project: &apos;GenerateHbaseData&apos;&#x0A;- Original elements:&#x0A;     GenerateHbaseData_fat.jar&#x0A;     GHbaseData_fat.jar&#x0A;     KunMing.jar&#x0A;     MRGHbaseData.jar&#x0A;     WC.jar" description="Delete elements" element1="KunMing.jar" element2="MRGHbaseData.jar" element3="WC.jar" element4="GenerateHbaseData_fat.jar" element5="GHbaseData_fat.jar" elements="0" flags="589830" id="org.eclipse.jdt.ui.delete" resources="5" stamp="1472380404397" subPackages="false" version="1.0"/>
+</session>

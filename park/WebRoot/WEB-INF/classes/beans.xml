@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context-2.5.xsd
+           http://www.springframework.org/schema/aop
+           http://www.springframework.org/schema/aop/spring-aop-2.5.xsd
+           http://www.springframework.org/schema/tx 
+           http://www.springframework.org/schema/tx/spring-tx-2.5.xsd">
+	<context:annotation-config />
+	<context:component-scan base-package="com" />
+	<aop:aspectj-autoproxy proxy-target-class="true"/>
+	<bean
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<value>classpath:jdbc.properties</value>
+		</property>
+	</bean>
+
+	<bean id="dataSource" destroy-method="close"
+		class="org.apache.commons.dbcp.BasicDataSource">
+		<property name="driverClassName"
+			value="${jdbc.driverClassName}" />
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+	</bean>
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		 <property name="packagesToScan">
+			<list>
+				<value>com.parkbobo.model</value>
+				<value>com.parkbobo.manager.model</value>
+				<value>com.weixin.model</value>
+				<value>com.parkbobo.groundlock.model</value>
+		</list>
+		</property>
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">
+					org.hibernatespatial.postgis.PostgisDialect
+				</prop>
+				<prop key="connection.autocommit">true</prop>
+				<prop key="hibernate.cache.use_query_cache">false</prop>
+                <prop key="hibernate.cache.provider_class">org.hibernate.connection.C3P0ConnectionProvider</prop>
+				<prop key="c3p0.min_size">7</prop>
+				<prop key="c3p0.max_size">42</prop>
+				<prop key="c3p0.timeout">1800</prop>
+				<prop key="c3p0.max_statements">50</prop>
+				<prop key="c3p0.idle_test_period">60</prop>
+				<prop key="c3p0.acquire_increment">1</prop>
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="hibernate.format_sql">false</prop>
+				<prop key="hibernate.cache.use_second_level_cache">false</prop>
+				<prop key="hibernate.cache.use_query_cache">false</prop>
+				<prop key="hibernate.cache.provider_class">net.sf.ehcache.hibernate.SingletonEhCacheProvider</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="hibernateTemplate" class="org.springframework.orm.hibernate3.HibernateTemplate">
+		<property name="sessionFactory" ref="sessionFactory"></property>
+	</bean>
+
+	<bean id="txManager"
+		class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+
+	<aop:config>
+		<aop:pointcut id="bussinessService"
+			expression="(execution(* com.parkbobo.service.*.*(..))) 
+			or (execution(* com.parkbobo.groundlock.service.*.*(..))) 
+			or (execution(* com.parkbobo.manager.service.*.*(..))) " />
+		<aop:advisor pointcut-ref="bussinessService"
+			advice-ref="txAdvice" />
+	</aop:config>
+	<tx:advice id="txAdvice" transaction-manager="txManager">
+		<tx:attributes>
+			<tx:method name="add*" propagation="REQUIRED" read-only="false"/>
+			<tx:method name="save*" propagation="REQUIRED" read-only="false"/>
+			<tx:method name="update*" propagation="REQUIRED" read-only="false"/>
+		    <tx:method name="merge*" propagation="REQUIRED" read-only="false"/>
+		    <tx:method name="delete*" propagation="REQUIRED" read-only="false"/>
+		     <tx:method name="bulkDelete*" propagation="REQUIRED" read-only="false"/>
+		     <tx:method name="bulkAdd*" propagation="REQUIRED" read-only="false"/>
+		     <tx:method name="localUpdateOneField*" propagation="REQUIRED" read-only="false"/>
+		     <tx:method name="register*" propagation="REQUIRED" read-only="false"/>
+		     <tx:method name="close*" propagation="REQUIRED" read-only="false"/>
+		     <tx:method name="import*" propagation="REQUIRED" read-only="false"/>
+		     <tx:method name="pushMessage" propagation="REQUIRED" read-only="false"/>
+		     <tx:method name="exesql" propagation="REQUIRED" read-only="false"/>
+		     <tx:method name="accept*" propagation="REQUIRED" read-only="false"/>
+		     <tx:method name="bind*" propagation="REQUIRED" read-only="false"/>
+		     <tx:method name="drawback_" propagation="REQUIRED" read-only="false"/>
+			<tx:method name="*" read-only="true"/>
+		</tx:attributes>
+	</tx:advice>
+	
+	<!-- 
+	<bean id="weiXinQuartz" class="com.weixin.quartz.WeiXinQuartz" /> 
+
+	<bean id="jobDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="weiXinQuartz" />
+		<property name="targetMethod" value="execute" />
+		<property name="concurrent" value="false" />
+	</bean>
+
+	<bean id="trigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+ 		<property name="jobDetail" ref="jobDetail" />
+        <property name="cronExpression" value="0 * * * * ?"  />
+	</bean>
+
+	<bean id="startQuertz" class="org.springframework.scheduling.quartz.SchedulerFactoryBean" lazy-init="false" >
+ 		<property name="triggers">
+ 			<list>
+				<ref bean="trigger" />
+ 			</list>
+		</property>
+	</bean>
+	 -->
+</beans>

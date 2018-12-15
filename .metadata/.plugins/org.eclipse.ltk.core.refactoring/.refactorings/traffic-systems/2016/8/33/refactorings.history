@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy element &apos;ParseToHbase.java&apos; to &apos;traffic/src/main/java/com.wuzhou.traffic&apos;&#x0A;- Original project: &apos;traffic-system&apos;&#x0A;- Destination element: &apos;traffic/src/main/java/com.wuzhou.traffic&apos;&#x0A;- Original element: &apos;com.wuzhou.consumer.ParseToHbase.java&apos;" description="Copy compilation unit" destination="=traffic/src\/main\/java&lt;com.wuzhou.traffic" element1="/src\/main\/java&lt;com.wuzhou.consumer{ParseToHbase.java" files="0" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1470551300505" units="1" version="1.0"/>
+</session>

@@ -1,0 +1,197 @@
+package wc;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.filter.BinaryComparator;
+import org.apache.hadoop.hbase.filter.CompareFilter;
+import org.apache.hadoop.hbase.filter.CompareFilter.CompareOp;
+import org.apache.hadoop.hbase.filter.FilterList;
+import org.apache.hadoop.hbase.filter.QualifierFilter;
+import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
+import org.apache.hadoop.hbase.util.Bytes;
+
+public class hbaseOp {
+	private static Configuration conf = null;
+	static Connection conn = null;
+	// public hbaseOp(Configuration conf){
+	// this.conf=conf;
+	// }
+	static {
+		conf = HBaseConfiguration.create();
+		conf.set("hbase.zookeeper.quorum", "127.0.0.1");
+		//conf.set("hbase.zookeeper.property.clientPort", "2181");
+		try {
+			conn = ConnectionFactory.createConnection(conf);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	public void createTable(TableName tablename, String[] cfs)
+			throws IOException {
+
+		Admin admin = conn.getAdmin();
+		if (admin.tableExists(tablename)) {
+			System.out.println("table exists!");
+		}
+
+		else {
+			HTableDescriptor tableDesc = new HTableDescriptor(tablename);
+			for (int i = 0; i < cfs.length; i++) {
+				tableDesc.addFamily(new HColumnDescriptor(cfs[i]));
+			}
+			admin.createTable(tableDesc);
+			System.out.println("create table " + tablename + " success!");
+
+		}
+
+		admin.close();
+
+	}
+
+	public void put(String tablename, String row, String columnFamily,
+			String column, String data) throws Exception {
+		TableName table = TableName.valueOf(tablename);
+		Table htable = conn.getTable(table);
+
+		Put p1 = new Put(Bytes.toBytes(row));
+
+		p1.addColumn(columnFamily.getBytes(), column.getBytes(),
+				data.getBytes());
+		htable.put(p1);
+
+	}
+
+	public void get(String tablename, String row) throws Exception {// ??????
+		TableName table = TableName.valueOf(tablename);
+		Table htable = conn.getTable(table);
+		Get g = new Get(Bytes.toBytes(row));
+		Result result = htable.get(g);
+		byte[] value = result.getValue(Bytes.toBytes("grade"),
+				Bytes.toBytes("class"));
+		System.out.println("Get:" + row + "--class is" + Bytes.toString(value));
+	}
+
+	public void scan(String tablename) throws Exception {// ??????
+		TableName table = TableName.valueOf(tablename);
+		Table htable = conn.getTable(table);
+		Scan s = new Scan();
+		ResultScanner rs = htable.getScanner(s);
+		for (Result r : rs) {
+			byte[] row = r.getRow();
+			byte[] value = r.getValue(Bytes.toBytes("grade"),
+					Bytes.toBytes("class"));
+			System.out.println("Scan:" + Bytes.toString(row) + "--class is"
+					+ Bytes.toString(value));
+		}
+		rs.close();
+	}
+
+	public void deleteRow(String tablename, String rowkey) throws IOException {
+		TableName table = TableName.valueOf(tablename);
+		Table htable = conn.getTable(table);
+		List<Delete> list = new ArrayList<Delete>();
+		Delete d1 = new Delete(rowkey.getBytes());
+		list.add(d1);
+		htable.delete(list);
+		System.out.println("delete row " + rowkey + " success!");
+	}
+
+	public void delete(TableName tablename) throws IOException {
+		Admin admin = conn.getAdmin();
+		try {
+			if (!admin.tableExists(tablename)) { // !!
+				System.out.println("table :" + tablename + " is not exists!");
+			} else {
+				admin.disableTable(tablename);
+				admin.deleteTable(tablename);
+				System.out.println("delete " + tablename + " success!");
+			}
+		} catch (Exception ex) { // TODO Auto-generated catch block
+			ex.printStackTrace();
+		} finally {
+			try {
+				admin.close(); // !!
+			} catch (Exception ex) { // TODO Auto-generated catch block
+				ex.printStackTrace();
+
+			}
+		}
+	}
+
+	public void filterByClass(String tablename, String strClass)
+			throws Exception {
+		TableName table = TableName.valueOf(tablename);
+		Table htable = conn.getTable(table);
+		Scan s = new Scan();
+		SingleColumnValueFilter sf = new SingleColumnValueFilter(
+				Bytes.toBytes("grade"), Bytes.toBytes("class"),
+				CompareOp.EQUAL, Bytes.toBytes(strClass));
+		s.setFilter(sf);
+
+		ResultScanner rs = htable.getScanner(s);
+		for (Result r : rs) {
+
+			byte[] row = r.getRow();
+			byte[] value = r.getValue(Bytes.toBytes("grade"),
+					Bytes.toBytes("class"));
+
+			System.out.println("Filter:" + Bytes.toString(row) + "is in class"
+					+ Bytes.toString(value));
+
+		}
+		rs.close();
+
+	}
+
+	public void filterList(String tablename, String strClass) throws Exception {
+		TableName table = TableName.valueOf(tablename);
+		Table htable = conn.getTable(table);
+		Scan s = new Scan();
+		SingleColumnValueFilter sf = new SingleColumnValueFilter(
+				Bytes.toBytes("grade"), Bytes.toBytes("class"),
+				CompareOp.EQUAL, Bytes.toBytes(strClass));
+		QualifierFilter qf = new QualifierFilter(
+				CompareFilter.CompareOp.NOT_EQUAL, new BinaryComparator(
+						Bytes.toBytes("english")));
+
+		FilterList list = new FilterList(FilterList.Operator.MUST_PASS_ALL);
+		list.addFilter(sf);
+		list.addFilter(qf);
+		s.setFilter(list);
+		ResultScanner rs = htable.getScanner(s);
+
+		for (Result r : rs) {
+
+			byte[] row = r.getRow();
+			byte[] value = r.getValue(Bytes.toBytes("grade"),
+					Bytes.toBytes("class"));
+			System.out.println("Filter:" + Bytes.toString(row) + "is in class"
+					+ Bytes.toString(value));
+
+		}
+		rs.close();
+
+	}
+
+}

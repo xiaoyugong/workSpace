@@ -1,0 +1,17 @@
+package com.wuzhou.traffic;
+
+import org.apache.spark.serializer.KryoRegistrator;
+
+import com.esotericsoftware.kryo.Kryo;
+import com.kmlc.protobuf.OffenceSnapDataProtos.OffenceSnapData;
+
+public class MyKryoRegistrator implements KryoRegistrator {
+	
+
+	public void registerClasses(Kryo kryo) {
+		// TODO Auto-generated method stub
+		kryo.register(OffenceSnapData.class);
+	}
+}
+
+

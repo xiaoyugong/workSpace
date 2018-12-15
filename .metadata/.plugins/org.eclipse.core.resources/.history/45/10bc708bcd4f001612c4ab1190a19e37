@@ -1,0 +1,305 @@
+package fb.gxy;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+import org.apache.commons.lang.RandomStringUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.BufferedMutator;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Delete;
+import org.apache.hadoop.hbase.client.Durability;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Mutation;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.jruby.RubyProcess.Sys;
+
+public class GenerateHbaseData {
+
+	public static Configuration configuration;  
+    public static Connection connection;  
+    public static Admin admin; 
+    public static String tableName;
+    public static String[] cq1 = new String[]{"Id", "DriveChan", "VehicleType1", "VehicleAttribute", "IllegalType1",
+    		"IllegalSubType", "PostPicNo", "ChanIndex", "SpeedLimit", "PlateType", "PlateColor", "Bright",
+    		"LicenseLen", "Country", "License", "Believe", "Index", "VehicleType2", "ColorDepth", "Color", 
+    		"Speed", "Length", "IllegalType2", "VehicleLogoRecog", "VehicleSubLogoRecog", "VehicleModel", 
+    		"MonitoringSiteID", "Dir", "DetectType", "PilotSafebelt", "CopilotSafebelt", "PilotSubVisor",
+    		"CopilotSubVisor", "PilotCall", "AlarmDataType", "llegalTime", "IllegalTime", "PicNum"};
+    public static String[] cq2 = new String[]{"Type", "PicRecogMode", "RedLightTime", "X", "Y", "Width", "Height", "Data"};
+    
+    public static void main(String[] args) throws IOException, Exception {  
+    	//createTable("passvehicle",new String[]{"info","image"});
+    	MultThreadInsert("passvehicle");
+    	//insertRow("passvehicle");
+    	//getData("t2", "rw1", "cf1", "q1");  
+        //scanData("t2", "rw1", "rw2");  
+        //deleRow("t2","rw1","cf1","q1");  
+//        deleteTable("passvehicle");  
+    }  
+  
+    public static void getPutList() throws IOException{
+    	Table table = connection.getTable(TableName.valueOf(tableName));
+    	List<Put> putList = new ArrayList<Put>();
+    	for(int i = 1; i <= 100000; i++){
+    		int random = (int)(Math.random()*(100000-10000))+10000;
+    		//抓拍时间
+    		long time = System.currentTimeMillis();
+    		//设备编号
+    		String Id = String.valueOf(random + time);
+    		Random rand = new Random();
+    		//违法类型
+    		String IllegalType = String.valueOf(rand.nextInt(20));
+    		//车型
+    		String VehicleType = String.valueOf(rand.nextInt(11));
+    		//车牌号
+    		String carNo = RandomStringUtils.randomAlphanumeric(5);
+    		String rowkey = "(" + Id.charAt(Id.length()-1) + ")" + Id + "_" + String.valueOf(time) + "(" + i%2 + ")_" + carNo + "_" + VehicleType + "_" + IllegalType;
+    		
+    		Put put = new Put(Bytes.toBytes(rowkey)); 
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[0]), Bytes.toBytes(Id));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[1]), Bytes.toBytes(String.valueOf(rand.nextInt(11))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[2]), Bytes.toBytes(VehicleType));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[3]), Bytes.toBytes(String.valueOf(rand.nextInt(3))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[4]), Bytes.toBytes(IllegalType));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[5]), Bytes.toBytes(IllegalType));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[6]), Bytes.toBytes(String.valueOf(rand.nextInt(3)+1)));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[7]), Bytes.toBytes(String.valueOf(rand.nextInt(11))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[8]), Bytes.toBytes("120km/h"));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[9]), Bytes.toBytes(String.valueOf(rand.nextInt(9))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[10]), Bytes.toBytes(String.valueOf(rand.nextInt(7))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[11]), Bytes.toBytes("100nit"));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[12]), Bytes.toBytes("5"));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[13]), Bytes.toBytes("Country"));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[14]), Bytes.toBytes(carNo));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[15]), Bytes.toBytes("believe"));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[16]), Bytes.toBytes(""+ i + ""));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[17]), Bytes.toBytes(String.valueOf(rand.nextInt(7))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[18]), Bytes.toBytes(String.valueOf(rand.nextInt(2))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[19]), Bytes.toBytes(String.valueOf(rand.nextInt(13))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[20]), Bytes.toBytes("90km/h"));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[21]), Bytes.toBytes("2m"));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[22]), Bytes.toBytes(String.valueOf(rand.nextInt(22))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[23]), Bytes.toBytes("VehicleLogoRecog"));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[24]), Bytes.toBytes("VehicleSubLogoRecog"));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[25]), Bytes.toBytes("VehicleModel"));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[26]), Bytes.toBytes(String.valueOf(rand.nextInt(100000))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[27]), Bytes.toBytes(String.valueOf(rand.nextInt(9))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[28]), Bytes.toBytes(String.valueOf(rand.nextInt(6))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[29]), Bytes.toBytes(String.valueOf(rand.nextInt(3))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[30]), Bytes.toBytes(String.valueOf(rand.nextInt(3))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[31]), Bytes.toBytes(String.valueOf(rand.nextInt(3))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[32]), Bytes.toBytes(String.valueOf(rand.nextInt(3))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[33]), Bytes.toBytes(String.valueOf(rand.nextInt(3))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[34]), Bytes.toBytes(String.valueOf(rand.nextInt(2))));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[35]), Bytes.toBytes("llegalTime"));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[36]), Bytes.toBytes("IllegalTime"));
+    		put.addColumn(Bytes.toBytes("info"), Bytes.toBytes(cq1[37]), Bytes.toBytes("3"));
+    		
+    		put.addColumn(Bytes.toBytes("image"), Bytes.toBytes(cq2[0]), Bytes.toBytes(String.valueOf(rand.nextInt(10))));
+    		put.addColumn(Bytes.toBytes("image"), Bytes.toBytes(cq2[1]), Bytes.toBytes(String.valueOf(rand.nextInt(2))));
+    		put.addColumn(Bytes.toBytes("image"), Bytes.toBytes(cq2[2]), Bytes.toBytes("300s"));
+    		put.addColumn(Bytes.toBytes("image"), Bytes.toBytes(cq2[3]), Bytes.toBytes("1"));
+    		put.addColumn(Bytes.toBytes("image"), Bytes.toBytes(cq2[4]), Bytes.toBytes("1"));
+    		put.addColumn(Bytes.toBytes("image"), Bytes.toBytes(cq2[5]), Bytes.toBytes("1"));
+    		put.addColumn(Bytes.toBytes("image"), Bytes.toBytes(cq2[6]), Bytes.toBytes("1"));
+    		put.addColumn(Bytes.toBytes("image"), Bytes.toBytes(cq2[7]), Bytes.toBytes("picData"));
+    		put.setDurability(Durability.SKIP_WAL);
+    	
+            putList.add(put);
+            
+            //批量插入
+            if(i%20000 == 0){
+            	table.put(putList);
+            	putList.clear();
+            } 
+    	}
+//    	table.put(putList);
+    	table.close();
+    }
+    //初始化链接  
+    public static void init(){  
+        configuration = HBaseConfiguration.create();  
+        configuration.set("hbase.zookeeper.quorum","localhost");  
+        configuration.set("hbase.zookeeper.property.clientPort","2181");  
+        configuration.set("zookeeper.znode.parent","/hbase");  
+        configuration.setInt("hbase.client.write.buffer", 2*1024*1024);
+        
+        try {  
+            connection = ConnectionFactory.createConnection(configuration);  
+            admin = connection.getAdmin();  
+        } catch (IOException e) {  
+            e.printStackTrace();  
+        }  
+    }  
+  
+    //关闭连接  
+    public static void close(){  
+        try {  
+            if(null != admin)  
+                admin.close();  
+            if(null != connection)  
+                connection.close();  
+        } catch (IOException e) {  
+            e.printStackTrace();  
+        }  
+  
+    }  
+  
+    //建表  
+    public static void createTable(String tableNmae,String[] cols) throws IOException {  
+  
+        init();  
+        TableName tableName = TableName.valueOf(tableNmae);  
+  
+        if(admin.tableExists(tableName)){  
+            System.out.println("talbe is exists!");  
+        }else {  
+            HTableDescriptor hTableDescriptor = new HTableDescriptor(tableName);  
+            for(String col:cols){  
+                HColumnDescriptor hColumnDescriptor = new HColumnDescriptor(col);  
+                hTableDescriptor.addFamily(hColumnDescriptor);  
+            }  
+            admin.createTable(hTableDescriptor);  
+        }  
+        close();  
+    }  
+  
+    //删表  
+    public static void deleteTable(String tableName) throws IOException {  
+        init();  
+        TableName tn = TableName.valueOf(tableName);  
+        if (admin.tableExists(tn)) {  
+            admin.disableTable(tn);  
+            admin.deleteTable(tn);  
+        }  
+        close();  
+    }  
+  
+    //查看已有表  
+    public static void listTables() throws IOException {  
+        init();  
+        HTableDescriptor hTableDescriptors[] = admin.listTables();  
+        for(HTableDescriptor hTableDescriptor :hTableDescriptors){  
+            System.out.println(hTableDescriptor.getNameAsString());  
+        }  
+        close();  
+    }  
+  
+    //插入数据  
+    public static void insertRow(String tableName) throws IOException {  
+        init(); 
+        GenerateHbaseData.tableName = tableName;
+        long startTime = System.currentTimeMillis();
+        getPutList();
+        long spend = System.currentTimeMillis() - startTime;
+        System.out.println("insert data finished in " + spend + "ms");
+        close();  
+    } 
+        //多线程插入
+    public static void MultThreadInsert(String tableName) throws InterruptedException {
+    	init();
+    	GenerateHbaseData.tableName = tableName;
+    	System.out.println("---------MultThreadInsert----------");
+    	long start = System.currentTimeMillis();
+    	int threadNumber = 3;
+    	Thread[] threads=new Thread[threadNumber];
+    	for(int i=0;i<threads.length;i++) {
+    		threads[i]= new ImportThread();
+    		threads[i].start();            
+    	}
+    	for(int j=0;j< threads.length;j++) {
+    		(threads[j]).join();
+    	}
+    	long stop = System.currentTimeMillis();
+    	
+ 		System.out.println("MultThreadInsert："+threadNumber+"个线程插入"+threadNumber*10000+"条数据共耗时："+ (stop - start) + "ms");
+	}    
+  
+    public static class ImportThread extends Thread {
+    	public void run(){
+			try{
+				getPutList();            
+			} catch(IOException e) {
+				e.printStackTrace();                
+			} finally {
+				System.gc();
+			}
+		}
+    }
+    //删除数据  
+    public static void deleRow(String tableName,String rowkey,String colFamily,String col) throws IOException {  
+        init();  
+        Table table = connection.getTable(TableName.valueOf(tableName));  
+        Delete delete = new Delete(Bytes.toBytes(rowkey));  
+        //删除指定列族  
+        //delete.addFamily(Bytes.toBytes(colFamily));  
+        //删除指定列  
+        //delete.addColumn(Bytes.toBytes(colFamily),Bytes.toBytes(col));  
+        table.delete(delete);  
+        //批量删除  
+       /* List<Delete> deleteList = new ArrayList<Delete>(); 
+        deleteList.add(delete); 
+        table.delete(deleteList);*/  
+        table.close();  
+        close();  
+    }  
+  
+    //根据rowkey查找数据  
+    public static void getData(String tableName,String rowkey,String colFamily,String col)throws  IOException{  
+        init();  
+        Table table = connection.getTable(TableName.valueOf(tableName));  
+        Get get = new Get(Bytes.toBytes(rowkey));  
+        //获取指定列族数据  
+        //get.addFamily(Bytes.toBytes(colFamily));  
+        //获取指定列数据  
+        //get.addColumn(Bytes.toBytes(colFamily),Bytes.toBytes(col));  
+        Result result = table.get(get);  
+  
+        showCell(result);  
+        table.close();  
+        close();  
+    }  
+  
+    //格式化输出  
+    public static void showCell(Result result){  
+        Cell[] cells = result.rawCells();  
+        for(Cell cell:cells){  
+            System.out.println("RowName:"+new String(CellUtil.cloneRow(cell))+" ");  
+            System.out.println("Timetamp:"+cell.getTimestamp()+" ");  
+            System.out.println("column Family:"+new String(CellUtil.cloneFamily(cell))+" ");  
+            System.out.println("row Name:"+new String(CellUtil.cloneQualifier(cell))+" ");  
+            System.out.println("value:"+new String(CellUtil.cloneValue(cell))+" ");  
+        }  
+    }  
+  
+    //批量查找数据  
+    public static void scanData(String tableName,String startRow,String stopRow)throws IOException{  
+        init();  
+        Table table = connection.getTable(TableName.valueOf(tableName));  
+        Scan scan = new Scan();  
+        //scan.setStartRow(Bytes.toBytes(startRow));  
+        //scan.setStopRow(Bytes.toBytes(stopRow));  
+        ResultScanner resultScanner = table.getScanner(scan);  
+        for(Result result : resultScanner){  
+            showCell(result);  
+        }  
+        table.close();  
+        close();  
+    }  
+}

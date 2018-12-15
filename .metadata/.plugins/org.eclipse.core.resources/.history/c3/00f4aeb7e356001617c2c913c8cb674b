@@ -1,0 +1,106 @@
+package com.wuzhou.producer;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+
+import com.google.protobuf.ByteString;
+import com.kmlc.protobuf.OffenceSnapDataProtos.OffenceSnapData;
+import com.kmlc.protobuf.OffenceSnapDataProtos.PicInfoModel;
+import com.kmlc.protobuf.OffenceSnapDataProtos.PlateInfoModel;
+import com.kmlc.protobuf.OffenceSnapDataProtos.PlateRectModel;
+import com.kmlc.protobuf.OffenceSnapDataProtos.VehicleInfoModel;
+
+/**
+ * Created by gxy on 16-7-30.
+ */
+public class ToKafka { 
+    public static void main(String[] args) throws IOException, Exception {
+        Properties props = new Properties();
+        props.put("bootstrap.servers", "localhost:9092");
+        props.put("acks", "all");
+        props.put("retries", 0);
+        props.put("batch.size", 16384);
+        props.put("linger.ms", 1);
+        props.put("buffer.memory", 33554432);
+        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        
+        //构建消息
+        OffenceSnapData.Builder offenceSnapDataBuilder = OffenceSnapData.newBuilder();
+        offenceSnapDataBuilder.setId("ID1")
+        					  .setDriveChan(1)
+        					  .setVehicleType(1)
+        					  .setVehicleAttribute(1)
+        					  .setIllegalType(1)
+        					  .setIllegalSubType("IllegalSubType1")
+        					  .setPostPicNo(1)
+        					  .setChanIndex(1)
+        					  .setSpeedLimit(1)
+        					  .setMonitoringSiteID("MonitoringSiteID1")
+        					  .setDir(1)
+        					  .setDetectType(1)
+        					  .setPilotSafebelt(1)
+        					  .setCopilotSafebelt(1)
+        					  .setPilotSubVisor(1)
+        					  .setCopilotSubVisor(1)
+        					  .setPilotCall(1)
+        					  .setAlarmDataType(1)
+        					  .setLlegalTime("LlegalTime")
+        					  .setIllegalTimer(1)
+        					  .setPicNum(1);
+        
+        PlateInfoModel.Builder plateInfoModel = PlateInfoModel.newBuilder();
+        plateInfoModel.setPlateType(1)
+        			  .setColor(1)
+        			  .setBright(1)
+        			  .setLicenseLen(1)
+        			  .setCountry(1)
+        			  .setLicense("License1")
+        			  .setBelieve("Believe1");
+        
+        VehicleInfoModel.Builder vehicleInfoModel = VehicleInfoModel.newBuilder();
+        vehicleInfoModel.setIndex(1)
+        				.setVehicleType(1)
+        				.setColorDepth(1)
+        				.setColor(1)
+        				.setSpeed(1.0f)
+        				.setLength(1.0f)
+        				.setIllegalType(1)
+        				.setVehicleLogoRecog(1)
+        				.setVehicleSubLogoRecog(1)
+        				.setVehicleModel(1);
+        
+        List<PicInfoModel.Builder> picInfoModelBuilders = new ArrayList<>(3);
+        for(int i = 1; i <= 3; i++){
+        	PicInfoModel.Builder picInfoModel = PicInfoModel.newBuilder();
+	        picInfoModel.setType(1)
+	        			.setPicRecogMode(1)
+	        			.setRedLightTime(1)
+	        			.setData(ByteString.copyFrom("Data".getBytes()));
+	        
+	        PlateRectModel.Builder plateRectModel = PlateRectModel.newBuilder();
+	        plateRectModel.setX(1)
+	        			  .setY(1)
+	        			  .setWidth(1)
+	        			  .setHeight(1);
+	        picInfoModel.setPlateRect(plateRectModel);
+	        
+	        picInfoModelBuilders.add(picInfoModel);
+        }
+        
+        OffenceSnapData offenceSnapData = offenceSnapDataBuilder.setPlateInfo(plateInfoModel)
+		  	                  									.setVehicleInfo(vehicleInfoModel)
+		  	                  									.addPicInfo(picInfoModelBuilders.get(0))
+		  	                  									.addPicInfo(picInfoModelBuilders.get(1))
+		  	                  									.addPicInfo(picInfoModelBuilders.get(2)).build();
+        //发送消息
+        producer.send(new ProducerRecord<String, String>("traffictopic", "key", offenceSnapData.toByteArray().toString()));
+        producer.close();
+    }
+}

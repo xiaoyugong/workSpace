@@ -1,0 +1,6 @@
+eclipse.preferences.version=1
+encoding//src/Server/src/main/java/com/yao/NettyServerHandler.java=UTF-8
+encoding//src/Share/src/main/java/com/yao/module/AskMsg.java=UTF-8
+encoding//src/Share/src/main/java/com/yao/module/BaseMsg.java=UTF-8
+encoding//src/Share/src/main/java/com/yao/module/LoginMsg.java=UTF-8
+encoding//src/Share/src/main/java/com/yao/module/PingMsg.java=UTF-8

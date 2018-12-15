@@ -1,0 +1,120 @@
+#wrap{
+	margin: 30px;
+	font-family: "微软雅黑";
+	color:#444;
+}
+
+#alarm{
+	margin:0; 
+	padding: 6px 0 6px 100px;
+    color: #888;
+    font-size:14px;
+    display: none;
+}
+
+label{
+	display: inline-block;
+    text-align: right;
+    margin-right: 10px;
+}
+
+button{
+	margin-right: 10px;
+	border-width: 0px;
+	border-radius: 5px;
+	padding: 8px 12px;
+	border:1px solid #ccc;
+}
+
+button:hover{
+	cursor:pointer;
+	background-color:white;
+}
+
+input{
+	border: 1px solid #CCC;
+	padding: 5px 8px;
+	border-radius: 5px;
+}
+
+/*importdat.jsp*/
+#importdata input[type="file"]{
+	display: none;
+}
+
+#importdata input[type="text"]{
+	padding: 6px 8px;
+	width: 280px;
+	margin-right: 10px;
+	box-shadow: inset 0px 1px 1px #ccc;
+}
+
+#importdata {
+	border: 1px solid #ccc;
+	width: 500px;
+	padding: 15px 10px;
+	border-radius: 5px;
+}
+
+#importdata #btn-group{
+	margin-top: 10px;
+}
+
+#importdata button{
+	margin-right: 10px;
+	padding: 6px 15px 6px 20px;
+	letter-spacing: 5px;
+}
+
+#importdata #alarm{
+	padding-left: 0px;
+}
+
+/*createmodel.jsp*/
+#createmodel{
+	border-radius: 3px;
+	border: 1px solid #ccc;
+	width: 500px;
+}
+
+#createmodel label{
+	width: 160px;
+}
+
+#createmodel div{
+	margin-bottom: 8px;
+	border-bottom: 1px solid #ccc;
+	padding: 8px 0px;
+}
+
+#createmodel #btn-group{
+	padding-left: 100px;
+	margin: 0px;
+}
+
+#createmodel button{
+	padding:5px 15px;
+}
+
+#createmodel input{
+	width: 250px;
+	padding:6px 8px;
+	box-shadow: inset 0px 1px 1px #ccc;
+}
+
+/*modelevaluateion.jsp*/
+#modelevaluateion input[type='file']{
+	display: none;
+}
+
+#modelevaluateion input[type='text']{
+	width: 250px;
+}
+
+#upId{
+	border: 1px solid #CCC;
+	border-radius: 3px;
+	padding: 3px 6px;
+	font-size: 14px;
+	margin: 0px;
+}

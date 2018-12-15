@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<list key="org.eclipse.ui.internal.wizards.datatransfer.SmartImportRootWizardPage.knownSources">
+		<item value="/home/gxy/workspace/ServerClient"/>
+		<item value="/home/gxy/workspace/FP"/>
+		<item value="/home/gxy/workspace/mahout"/>
+	</list>
+	<section name="CleanDialogSettings">
+		<item value="644" key="DIALOG_WIDTH"/>
+		<item value="true" key="TOGGLE_SELECTED"/>
+		<item value="391" key="DIALOG_HEIGHT"/>
+		<item value="651" key="DIALOG_X_ORIGIN"/>
+		<item value="305" key="DIALOG_Y_ORIGIN"/>
+	</section>
+	<section name="ExternalProjectImportWizard">
+		<item value="false" key="WizardProjectsImportPage.STORE_NESTED_PROJECTS"/>
+		<item value="true" key="WizardProjectsImportPage.STORE_COPY_PROJECT_ID"/>
+		<item value="false" key="WizardProjectsImportPage.STORE_ARCHIVE_SELECTED"/>
+		<list key="WizardProjectsImportPage.STORE_DIRECTORIES">
+			<item value="/media/gxy/2CBE-1999/hangzhoubisai/HBaseScore"/>
+			<item value="/home/gxy/workspace/NettyClient"/>
+			<item value="/home/gxy/workspace/ServerClient"/>
+			<item value="/home/gxy/workspace/source"/>
+			<item value="/home/gxy/workspace/flume"/>
+			<item value="/home/gxy/桌面/源码/综合/一体化车位锁源码/后台管理系统源码+接口源码+数据库文件/park"/>
+			<item value="/home/gxy/桌面/源码/javaweb/在线考试/Exam"/>
+			<item value="/home/gxy/桌面/源码/javaweb/图书管理系统/JspLibrary"/>
+			<item value="/home/gxy/桌面/源码/javaweb/电子商城/Shopping"/>
+			<item value="/home/gxy/桌面/源码/java/SMS"/>
+		</list>
+		<list key="WizardProjectsImportPage.STORE_ARCHIVES">
+			<item value=""/>
+		</list>
+	</section>
+	<section name="NewWizardAction">
+		<item value="org.eclipse.jdt.ui.wizards.JavaProjectWizard" key="NewWizardSelectionPage.STORE_SELECTED_ID"/>
+		<list key="NewWizardSelectionPage.STORE_EXPANDED_CATEGORIES_ID">
+		</list>
+	</section>
+</section>

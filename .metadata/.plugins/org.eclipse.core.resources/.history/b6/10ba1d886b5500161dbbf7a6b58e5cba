@@ -1,0 +1,127 @@
+package fb.gxy;
+
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.coprocessor.Batch;
+import org.apache.hadoop.hbase.ipc.BlockingRpcCallback;
+import org.apache.hadoop.hbase.ipc.ServerRpcController;
+import org.wuzhou.hanyun.corprocessor.ServerCountWuZhou;
+import org.wuzhou.hanyun.corprocessor.ServerCountWuZhou.Result;
+import org.wuzhou.hanyun.corprocessor.ServerCountWuZhou.RowCountResponse;
+import org.wuzhou.hanyun.corprocessor.ServerCountWuZhou.WuZhouService;
+
+import com.google.protobuf.ServiceException;
+
+
+public class KunMingClient {
+
+	public static void main(String[] args) {
+		getrow("passvehicle");
+	}
+	
+	public static class ResponseInfo {
+		public Object ob;
+		public boolean bool;
+
+	}
+
+	public static void getrow(String tablename) {
+
+		System.out.println("ewwe");
+		long date1 = System.currentTimeMillis();
+		Configuration conf = HBaseConfiguration.create();
+		
+    	conf.set("hbase.coprocessor.region.classes", "org.wuzhou.hanyun.corprocessor.KunMingServer");
+//		conf.set("hbase.master", "host_master:60000");
+	     conf.set("hbase.zookeeper.quorum", "");
+		 conf.set("hbase.zookeeper.property.clientPort", "2181");
+    	//conf.setBoolean("hbase.table.sanity.checks", true);
+
+		HTable table;
+		try {
+			table = new HTable(conf, tablename);
+
+			List<Result> list = new ArrayList<>();
+
+			ServerCountWuZhou.RowCountRequest request = ServerCountWuZhou.RowCountRequest.newBuilder().setMUST(true)
+				//	.setChepai("川A14137").setKakou("卡口1").build();
+			 // .setTimestart("1469515598556").setTimeend("1469515598559").build();
+			//	.setKakou("卡口1").build();
+				//.setChexing("dache").build();
+				//	.setWeizhang("违章了").build();
+					.setChepai("M5f1w").build();
+//			   .setChepai("川A14134").setKakou("卡口3").build();
+				//	.setChepai("").build();
+			
+			System.out.println("ewew");
+			Batch.Callback<RowCountResponse> callback = new Batch.Callback<RowCountResponse>() {
+				@Override
+				public void update(byte[] arg0, byte[] arg1, RowCountResponse resp) {
+					// TODO Auto-generated method stub
+					List<Result> list2 = resp.getResultList();
+					for (Result ha : list2) {
+						System.out.println(ha.getRowkey());
+
+					}
+				}
+			};
+			System.out.println("ewwe");
+			Map<byte[], ResponseInfo> map = table.coprocessorService(ServerCountWuZhou.WuZhouService.class, null,
+					null, new Batch.Call<ServerCountWuZhou.WuZhouService, ResponseInfo>() {
+
+						@Override
+						public ResponseInfo call(WuZhouService counter) throws IOException {
+							// TODO Auto-generated method stub
+							System.out.println("ewwe");
+							ServerRpcController con = new ServerRpcController();
+							BlockingRpcCallback<RowCountResponse> rpccall = new BlockingRpcCallback<RowCountResponse>();
+							System.out.println("ewew");
+							counter.getChePai(con, request, rpccall);
+							System.out.println("ewew");
+							RowCountResponse resp = rpccall.get();
+							//int length = resp.getSerializedSize();
+							//byte[] buf = resp.toByteArray();
+							if(resp.getOut()==false){
+								System.out.println("没查到相关数据 ! ! ! ");
+								return  null;
+							}
+
+
+							 List<Result> list2=resp.getResultList();
+							 for(Result ha:list2){
+							 System.out.println(ha.getRowkey());
+							
+							 }
+							 System.out.println("jiueshu le ");
+							
+							ResponseInfo ri = new ResponseInfo();
+							list.addAll(resp.getResultList());
+
+							return ri;
+						}
+					});
+
+
+			long date2 = System.currentTimeMillis();
+			System.out.println(date2 - date1);
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ServiceException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (Throwable e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+	}
+}

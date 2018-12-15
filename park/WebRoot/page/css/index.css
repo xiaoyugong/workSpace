@@ -1,0 +1,20 @@
+@charset "utf-8";
+/* CSS Document */
+.zsy-nr{ width: 100%; float: left;}
+.zsy-ul{ width: 348px; border:1px solid #d3dbde; float: left; margin:14px 0px 0px 20px ; display:inline;}
+.zsy-u-bt{ width: 348px; background:url(../images/zsy_u_bt.png); height: 36px; float: left; line-height: 36px; border-bottom:1px solid #d3dbde; }
+.zsy-u-bt i{ width: 56px; float: right; text-align: center; } 
+.zsy-u-bt i a{ color: #307fb1; } 
+.zsy-u-bt em{ width: 292px; float: left; font-size: 14px; font-weight: bold; text-indent: 16px; }
+.zsy-u-nr { width: 348px; float: left;  }
+.zsy-u-nr ul{ float: left; padding: 4px 10px 4px 10px; width: 328px;  } 
+.zsy-u-nr ul li{   width: 328px;  float: left; height: 23px; line-height: 23px;}
+.zsy-u-nr ul li em{ width: 290px; float: left; overflow: hidden;}  
+.zsy-u-nr ul li i{ width: 38px; float: left; overflow: hidden; color: #7b7b7b;}  
+.zsy-u-nr ul li a{ color: #000;}
+
+.tjmg .zsy-ul{ margin: 12px 0px 0px 17px; width: 380px; display:inline;}
+.tjmg .zsy-u-bt{width: 380px;}
+.tjmg .zsy-u-nr ul{ padding: 4px 14px 4px 14px; width: 352px }
+.tjmg .zsy-u-nr ul li{  width: 352px }
+.tjmg .zsy-u-nr ul li em{ width: 300px;}

@@ -1,0 +1,14 @@
+#Fat Jar Configuration File
+#Wed Nov 02 10:53:16 CST 2016
+onejar.license.required=true
+manifest.classpath=
+manifest.removesigners=true
+onejar.checkbox=false
+jarname=wc.jar
+manifest.mergeall=true
+manifest.mainclass=wc.WordCount
+manifest.file=<createnew>
+jarname.isextern=false
+onejar.expand=
+excludes=
+includes=

@@ -1,0 +1,122 @@
+package competition;
+
+import java.io.ByteArrayInputStream;
+import java.util.HashMap;
+import java.util.Map;
+
+
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamConstants;
+import javax.xml.stream.XMLStreamReader;
+
+public class Tools {
+	
+	//publicMap：保存公共部分的属性名和属性值（除meter和function以外的标签），格式为public tag name=value
+	private HashMap<String, String> publicMap = new HashMap<>();
+	//contentMap：保存meter和function标签的内容，格式为<meterid=< functionattr,funcattrvalue>>
+	private static HashMap<String,HashMap<String,String>> contentMap = new HashMap<>();
+	//funcMap：保存function的属性名和值
+	private static HashMap<String,String> funcMap = new HashMap<>();
+	//KVmap：存储当次Reduce处理数据的最后一组键值对，用于和下次Reduce中的第一组数据作差值
+	public static Map<String,String> KVmap = new HashMap<String,String>();
+	
+	//全局统计mapreduce程序执行次数
+	public static int runCounter = 0;
+	//统计当轮程序的文件处理个数
+	public static int fileCounter = 0;
+	
+	// 与HBase建立链接，并获得HBase操作对象
+	public static HBaseOps getHBase(){
+		return HBaseOps.connectHbase();
+	}
+	
+	//初始化需解析的xml的方法，需传递一个string类型的xml参数
+	public void initXml(String xml){
+		try {
+			XMLStreamReader reader = XMLInputFactory.newInstance()
+					.createXMLStreamReader(
+							new ByteArrayInputStream(xml.getBytes()));
+			/* currentElement：当前标签名
+				  attrName: 标签属性名
+				  attrValue: 标签属性值
+				  attrText: 标签文本值
+			 */
+			String currentElement  =  "";
+			String attrName = "";
+			String attrValue = "";
+			String attrText = "";
+			//读到meter时重新赋值0，START_ELEMENT状态下当读取到function时加1
+			int start_FuncCounter = 0;
+			//读到meter时重新赋值0，CHARACTERS状态下当读取到function时加1
+			int char_FuncCounter = 0;
+			// meterid：用来保存meter标签的ID属性
+			String meterid = "";
+			while(reader.hasNext()){
+				//获取标签的事件类型
+				int code = reader.next();
+				switch(code){
+				case XMLStreamConstants.START_ELEMENT: // 读取xml文本中的开始标签
+					//获取当前标签的名字
+					currentElement=reader.getLocalName();
+					//获取当前标签的所有属性数量
+					int attrCount=reader.getAttributeCount();
+					//当读取到meter标签时将funcMap重新初始化，将func的计数变量置为0，并获取到meterid的属性值
+					if(currentElement.equalsIgnoreCase("meter")){
+						start_FuncCounter = 0;
+						char_FuncCounter = 0;
+						//第一个属性值赋值给meterid
+						meterid = reader.getAttributeValue(0);
+						funcMap = new HashMap<>();
+					}
+					//当读取到function标签时，将开始标签状态下的function计数变量+1，将获取到的function的属性和值保存到funcMap中，将funcMap保存到contentMap中
+					else if(currentElement.equalsIgnoreCase("function")){
+						start_FuncCounter++;
+						for(int i = 0; i < attrCount; i++){
+							attrName = reader.getAttributeName(i).toString();
+							attrValue = reader.getAttributeValue(i);
+							funcMap.put(attrName + "_" + start_FuncCounter, attrValue);
+							contentMap.put(meterid, funcMap);
+						}
+					}
+					//将得到的公共部分标签的信息保存到publicMap中
+					else{
+						for(int i = 0; i < attrCount; i++){
+							attrName = reader.getAttributeName(i).toString();
+							attrValue = reader.getAttributeValue(i);
+							publicMap.put(currentElement + "_" + attrName, attrValue);
+						}
+					}
+					break;
+				case XMLStreamConstants.CHARACTERS: // 读取xml的文本节点
+					//过滤文本为空的标签
+					if (!reader.getText().trim().isEmpty()) {
+						//将得到的标签的文本值赋值给attrText
+						attrText = reader.getText(); 
+						//当读到function标签时，将当前标签文本状态下的function计数变量+1，将获取到的function的属性和值保存到funcMap中，将funcMap保存到contentMap中
+						if(currentElement.equalsIgnoreCase("function")){
+							char_FuncCounter++;
+							funcMap.put("text_" + char_FuncCounter, attrText);
+							contentMap.put(meterid, funcMap);
+						}else{
+							//将读到公共部分的标签值保存到publicmap中
+							publicMap.put(currentElement, attrText);
+						}
+					}
+					break;
+				}
+			}
+			reader.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} 
+	}
+	
+	//返回保存meter和function信息的HashMap
+	public  HashMap<String, HashMap<String, String>> getContent(){
+		return contentMap;
+	}
+	//返回保存公共标签信息的HashMap
+	public  HashMap<String, String> getPublic(){
+		return publicMap;
+	}
+}
